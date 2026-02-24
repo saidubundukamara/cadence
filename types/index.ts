@@ -1,0 +1,54 @@
+import type { Platform, PostStatus } from "@/generated/prisma/client"
+
+export type { Platform, PostStatus }
+
+export type PostWithResults = {
+  id: string
+  userId: string
+  content: string
+  platforms: Platform[]
+  scheduledAt: Date
+  status: PostStatus
+  mediaUrls: string[]
+  aiGenerated: boolean
+  qstashId: string | null
+  createdAt: Date
+  updatedAt: Date
+  results: {
+    id: string
+    postId: string
+    platform: Platform
+    status: PostStatus
+    platformPostId: string | null
+    error: string | null
+    publishedAt: Date | null
+  }[]
+}
+
+export type SocialAccountInfo = {
+  id: string
+  platform: Platform
+  accountName: string
+  accountId: string
+  pageId: string | null
+  expiresAt: Date | null
+  scopes: string[]
+  createdAt: Date
+}
+
+export type CalendarPost = {
+  id: string
+  content: string
+  platforms: Platform[]
+  scheduledAt: string
+  status: PostStatus
+  mediaUrls: string[]
+  aiGenerated: boolean
+}
+
+export type PostStats = {
+  total: number
+  published: number
+  scheduled: number
+  failed: number
+}
