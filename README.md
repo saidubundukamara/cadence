@@ -1,36 +1,137 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cadence
+
+AI-powered social media scheduling platform. Write once, publish everywhere — Cadence uses AI to craft platform-perfect posts, schedule them at optimal times, and publish automatically to Twitter, Facebook, and Instagram.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Database | Neon (serverless Postgres) via Prisma v7 |
+| Queue / Scheduler | Upstash QStash |
+| Media Storage | Cloudinary |
+| Auth | NextAuth v5 (Credentials + JWT) |
+| AI | OpenAI API (GPT-4o) |
+| Social APIs | Twitter API v2, Meta Graph API |
+| UI | shadcn/ui + Tailwind CSS v4 (oklch) |
+| State | Zustand |
+
+## Features
+
+- **Multi-platform publishing** — Twitter, Facebook, and Instagram from a single post
+- **AI content generation** — Generate and adapt content per platform using OpenAI
+- **Visual calendar** — Week-view calendar dashboard with drag-and-drop scheduling
+- **CSV import** — Bulk import posts from spreadsheets
+- **Scheduled publishing** — Queue posts via QStash with automatic retry
+- **OAuth connections** — Connect social accounts through OAuth 2.0 flows
+- **Dark/light mode** — Theme toggle with oklch color space
+
+## Project Structure
+
+```
+app/
+├── api/
+│   ├── ai/generate/        # AI content generation
+│   ├── auth/                # NextAuth + registration
+│   ├── posts/               # CRUD + CSV import
+│   ├── publish/             # QStash webhook handler
+│   ├── social/              # OAuth connect/callback/disconnect
+│   └── upload/              # Cloudinary media upload
+├── dashboard/               # Calendar dashboard
+├── import/                  # CSV import page
+├── login/                   # Auth pages
+├── register/
+├── posts/                   # Post management
+└── settings/                # Account connections
+components/
+├── calendar/                # Calendar view components
+├── landing/                 # Landing page sections
+├── posts/                   # Post form & selectors
+└── ui/                      # shadcn/ui primitives
+lib/
+├── auth.ts                  # NextAuth config
+├── db.ts                    # Prisma client
+├── encryption.ts            # Token encryption
+├── openai.ts                # OpenAI client
+├── queue.ts                 # QStash scheduling
+└── social/                  # Platform publish + token refresh
+prisma/
+└── schema.prisma            # Database schema
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 18+
+- A [Neon](https://neon.tech) PostgreSQL database
+- API keys for: OpenAI, Twitter, Meta (Facebook/Instagram), Cloudinary, Upstash QStash
+
+### Environment Variables
+
+Create a `.env.local` file:
+
+```env
+# Database
+DATABASE_URL="postgresql://..."
+
+# Auth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret"
+
+# OpenAI
+OPENAI_API_KEY="sk-..."
+
+# Twitter OAuth 2.0
+TWITTER_CLIENT_ID=""
+TWITTER_CLIENT_SECRET=""
+
+# Meta (Facebook + Instagram)
+META_APP_ID=""
+META_APP_SECRET=""
+
+# Cloudinary
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=""
+CLOUDINARY_API_KEY=""
+CLOUDINARY_API_SECRET=""
+
+# Upstash QStash
+QSTASH_TOKEN=""
+QSTASH_CURRENT_SIGNING_KEY=""
+QSTASH_NEXT_SIGNING_KEY=""
+
+# Encryption
+ENCRYPTION_KEY="32-byte-hex-key"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Install dependencies
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Generate Prisma client
+npx prisma generate
 
-## Learn More
+# Run database migrations
+npx prisma migrate dev
 
-To learn more about Next.js, take a look at the following resources:
+# Start development server
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Database Schema
 
-## Deploy on Vercel
+Key models: `User`, `SocialAccount` (OAuth tokens per platform), `Post` (content + scheduling), and `PostResult` (per-platform publish outcome). See `prisma/schema.prisma` for the full schema.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deploy to [Vercel](https://vercel.com):
+
+```bash
+npm run build
+```
+
+Ensure all environment variables are configured in your Vercel project settings. The `NEXTAUTH_URL` must match your production domain for OAuth callbacks to work correctly.
