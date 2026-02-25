@@ -2,39 +2,48 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Twitter, Facebook, Instagram } from "lucide-react"
+import { AlertTriangle, ExternalLink, RefreshCw, Unplug } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
-import type { SocialAccountInfo } from "@/types"
+import { platformConfig } from "@/lib/platform-config"
+import type { Platform, SocialAccountInfo } from "@/types"
 
-const platformConfig = {
-  TWITTER: {
-    name: "X (Twitter)",
-    icon: Twitter,
-    connectUrl: "/api/social/connect/twitter",
-    color: "text-blue-400",
-  },
-  FACEBOOK: {
-    name: "Facebook",
-    icon: Facebook,
-    connectUrl: "/api/social/connect/facebook",
-    color: "text-blue-600",
-  },
-  INSTAGRAM: {
-    name: "Instagram",
-    icon: Instagram,
-    connectUrl: "/api/social/connect/facebook?instagram=true",
-    color: "text-pink-500",
-  },
-} as const
+const connectUrls: Record<Platform, string> = {
+  TWITTER: "/api/social/connect/twitter",
+  FACEBOOK: "/api/social/connect/facebook",
+  INSTAGRAM: "/api/social/connect/facebook?instagram=true",
+  LINKEDIN: "/api/social/connect/linkedin",
+  YOUTUBE: "/api/social/connect/youtube",
+}
 
-type PlatformKey = keyof typeof platformConfig
+const platformDescriptions: Record<Platform, string> = {
+  TWITTER: "Post tweets and threads to your X account.",
+  FACEBOOK: "Publish to your Facebook page.",
+  INSTAGRAM: "Requires a Business/Creator account linked to a Facebook Page.",
+  LINKEDIN: "Share updates to your LinkedIn profile.",
+  YOUTUBE: "Upload videos to your YouTube channel.",
+}
+
+const PLATFORMS: Platform[] = ["TWITTER", "FACEBOOK", "INSTAGRAM", "LINKEDIN", "YOUTUBE"]
+
+function getExpirationStatus(expiresAt: Date | string | null) {
+  if (!expiresAt) return null
+  const expiry = new Date(expiresAt)
+  const now = new Date()
+  const daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (daysLeft < 0) return { label: "Token expired", variant: "destructive" as const }
+  if (daysLeft <= 7) return { label: `Expires in ${daysLeft}d`, variant: "warning" as const }
+  return null
+}
 
 export default function ConnectionsPage() {
   return (
-    <Suspense fallback={<div className="text-muted-foreground">Loading connections...</div>}>
+    <Suspense fallback={<ConnectionsSkeleton />}>
       <ConnectionsContent />
     </Suspense>
   )
@@ -49,13 +58,8 @@ function ConnectionsContent() {
   useEffect(() => {
     const connected = searchParams.get("connected")
     const error = searchParams.get("error")
-
-    if (connected) {
-      toast.success(`Successfully connected ${connected}`)
-    }
-    if (error) {
-      toast.error(`Connection failed: ${error}`)
-    }
+    if (connected) toast.success(`Successfully connected ${connected}`)
+    if (error) toast.error(`Connection failed: ${error}`)
   }, [searchParams])
 
   useEffect(() => {
@@ -81,7 +85,7 @@ function ConnectionsContent() {
         method: "DELETE",
       })
       if (res.ok) {
-        toast.success(`Disconnected ${platform}`)
+        toast.success(`Disconnected ${platformConfig[platform as Platform]?.label ?? platform}`)
         setAccounts((prev) => prev.filter((a) => a.platform !== platform))
       } else {
         toast.error("Failed to disconnect")
@@ -92,87 +96,144 @@ function ConnectionsContent() {
   }
 
   const connectedPlatforms = new Map(accounts.map((a) => [a.platform, a]))
+  const connectedCount = accounts.length
+
+  if (loading) return <ConnectionsSkeleton />
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Connections</h2>
         <p className="text-muted-foreground">
-          Connect your social accounts to post on your behalf.
+          {connectedCount > 0
+            ? `${connectedCount} account${connectedCount !== 1 ? "s" : ""} connected. Connect more to expand your reach.`
+            : "Connect your social accounts to post on your behalf."}
         </p>
       </div>
-      <div className="grid gap-4">
-        {(Object.keys(platformConfig) as PlatformKey[]).map((platform) => {
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {PLATFORMS.map((platform) => {
           const config = platformConfig[platform]
           const account = connectedPlatforms.get(platform)
           const Icon = config.icon
 
-          return (
-            <Card key={platform}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="flex items-center gap-3">
-                  <Icon className={`size-5 ${config.color}`} />
-                  <div>
-                    <CardTitle className="text-base">{config.name}</CardTitle>
-                    <CardDescription>
-                      {account
-                        ? `Connected as ${account.accountName}`
-                        : "Not connected"}
-                    </CardDescription>
-                  </div>
-                </div>
-                <Badge variant={account ? "default" : "secondary"}>
-                  {account ? "Connected" : "Disconnected"}
-                </Badge>
-              </CardHeader>
-              <CardContent>
-                {account ? (
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      {account.expiresAt && (
-                        <span>
-                          Expires:{" "}
-                          {new Date(account.expiresAt).toLocaleDateString()}
-                        </span>
-                      )}
-                      {!account.expiresAt &&
-                        platform !== "TWITTER" &&
-                        "Token: Never expires"}
+          if (account) {
+            const expiration = getExpirationStatus(account.expiresAt)
+            const isExpired = expiration?.variant === "destructive"
+
+            return (
+              <Card
+                key={platform}
+                className={`border-l-4 ${config.borderColor}`}
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-4">
+                    <div className={`flex size-12 shrink-0 items-center justify-center rounded-full ${config.bgColor}`}>
+                      <Icon className={`size-6 ${config.color}`} />
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => disconnect(platform)}
-                      disabled={disconnecting === platform}
-                    >
-                      {disconnecting === platform
-                        ? "Disconnecting..."
-                        : "Disconnect"}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    {platform === "INSTAGRAM" && (
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{config.label}</h3>
+                        <Badge variant="default" className="text-xs">Connected</Badge>
+                      </div>
+                      <p className="mt-0.5 truncate text-sm font-medium">{account.accountName}</p>
                       <p className="text-xs text-muted-foreground">
-                        Requires a Business/Creator account linked to a Facebook
-                        Page
+                        Connected {formatDistanceToNow(new Date(account.createdAt), { addSuffix: true })}
                       </p>
+                      {expiration && (
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <AlertTriangle className={`size-3.5 ${isExpired ? "text-red-500" : "text-amber-500"}`} />
+                          <span className={`text-xs font-medium ${isExpired ? "text-red-500" : "text-amber-500"}`}>
+                            {expiration.label}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    {(expiration) && (
+                      <Button size="sm" variant="outline" asChild>
+                        <a href={connectUrls[platform]}>
+                          <RefreshCw className="mr-1.5 size-3.5" />
+                          Reconnect
+                        </a>
+                      </Button>
                     )}
                     <Button
                       size="sm"
-                      asChild
-                      className={platform !== "INSTAGRAM" ? "ml-auto" : ""}
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => disconnect(platform)}
+                      disabled={disconnecting === platform}
                     >
-                      <a href={config.connectUrl}>
-                        Connect {config.name}
-                      </a>
+                      <Unplug className="mr-1.5 size-3.5" />
+                      {disconnecting === platform ? "Disconnecting..." : "Disconnect"}
                     </Button>
                   </div>
-                )}
+                </CardContent>
+              </Card>
+            )
+          }
+
+          return (
+            <Card
+              key={platform}
+              className="opacity-75 transition-opacity hover:opacity-100"
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <Icon className="size-6 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold">{config.label}</h3>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      {platformDescriptions[platform]}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button size="sm" asChild>
+                    <a href={connectUrls[platform]}>
+                      <ExternalLink className="mr-1.5 size-3.5" />
+                      Connect {config.label}
+                    </a>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+function ConnectionsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="mt-2 h-4 w-80" />
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-5">
+              <div className="flex items-start gap-4">
+                <Skeleton className="size-12 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <Skeleton className="h-8 w-24" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   )

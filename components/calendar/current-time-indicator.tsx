@@ -17,7 +17,7 @@ export function CurrentTimeIndicator() {
   return (
     <div
       className="pointer-events-none absolute right-0 left-0 z-20"
-      style={{ top }}
+      style={{ top: top + 24 }}
     >
       <div className="flex items-center">
         <div className="size-2 rounded-full bg-red-500" />

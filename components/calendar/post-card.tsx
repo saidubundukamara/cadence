@@ -1,60 +1,54 @@
 "use client"
 
 import { format } from "date-fns"
-import { Twitter, Facebook, Instagram } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { CalendarPost, Platform } from "@/types"
+import { platformConfig } from "@/lib/platform-config"
+import type { CalendarPost } from "@/types"
 
-const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
-  TWITTER: Twitter,
-  FACEBOOK: Facebook,
-  INSTAGRAM: Instagram,
-}
-
-const platformColors: Record<Platform, string> = {
-  TWITTER: "text-blue-400",
-  FACEBOOK: "text-blue-600",
-  INSTAGRAM: "text-pink-500",
+const statusDotColor: Record<string, string> = {
+  PENDING: "bg-yellow-500",
+  PUBLISHED: "bg-green-500",
+  FAILED: "bg-red-500",
+  CANCELLED: "bg-muted-foreground/30",
 }
 
 interface PostCardProps {
   post: CalendarPost
   variant?: "short" | "medium" | "full"
   onClick?: () => void
+  style?: React.CSSProperties
+  className?: string
 }
 
 export function PostCard({
   post,
   variant = "medium",
   onClick,
+  style,
+  className,
 }: PostCardProps) {
-  const statusBorder: Record<string, string> = {
-    PENDING: "border-l-yellow-500",
-    PUBLISHED: "border-l-green-500",
-    FAILED: "border-l-red-500",
-    CANCELLED: "border-l-muted-foreground/30",
-  }
+  const dot = (
+    <span
+      className={cn(
+        "size-1.5 shrink-0 rounded-full",
+        statusDotColor[post.status] || statusDotColor.PENDING
+      )}
+    />
+  )
 
   if (variant === "short") {
     return (
       <button
         onClick={onClick}
+        style={style}
         className={cn(
-          "flex w-full items-center gap-2 rounded-md border-l-2 bg-card px-2 py-1 text-left transition-all hover:bg-accent",
-          statusBorder[post.status]
+          "flex w-full items-center gap-2 overflow-hidden rounded-lg border border-border bg-card px-2 py-1 text-left transition-colors hover:bg-muted",
+          className
         )}
       >
-        <div className="flex gap-1">
-          {post.platforms.map((p) => {
-            const Icon = platformIcons[p]
-            return (
-              <Icon key={p} className={cn("size-3", platformColors[p])} />
-            )
-          })}
-        </div>
+        {dot}
         <span className="flex-1 truncate text-xs">{post.content}</span>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="shrink-0 text-[10px] text-muted-foreground">
           {format(new Date(post.scheduledAt), "h:mm a")}
         </span>
       </button>
@@ -65,34 +59,28 @@ export function PostCard({
     return (
       <button
         onClick={onClick}
+        style={style}
         className={cn(
-          "flex w-full flex-col gap-2 rounded-lg border-l-2 bg-card p-3 text-left transition-all hover:bg-accent hover:shadow-sm",
-          statusBorder[post.status]
+          "flex w-full flex-col gap-1.5 overflow-hidden rounded-lg border border-border bg-card p-2.5 text-left transition-colors hover:bg-muted",
+          className
         )}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex gap-1">
-            {post.platforms.map((p) => {
-              const Icon = platformIcons[p]
-              return (
-                <Icon key={p} className={cn("size-4", platformColors[p])} />
-              )
-            })}
-          </div>
-          <Badge
-            variant={
-              post.status === "PUBLISHED"
-                ? "default"
-                : post.status === "FAILED"
-                  ? "destructive"
-                  : "outline"
-            }
-            className="text-[10px]"
-          >
-            {post.status}
-          </Badge>
+        <div className="flex items-center gap-1.5">
+          {dot}
+          <p className="line-clamp-2 flex-1 text-xs font-medium">{post.content}</p>
         </div>
-        <p className="line-clamp-2 text-sm">{post.content}</p>
+        <span className="text-[10px] text-muted-foreground">
+          {format(new Date(post.scheduledAt), "h:mm a")}
+        </span>
+        <div className="flex gap-1">
+          {post.platforms.map((p) => {
+            const config = platformConfig[p]
+            const Icon = config.icon
+            return (
+              <Icon key={p} className={cn("size-3.5", config.color)} />
+            )
+          })}
+        </div>
         {post.mediaUrls.length > 0 && (
           <div className="flex gap-1">
             {post.mediaUrls.slice(0, 3).map((url) => (
@@ -100,14 +88,11 @@ export function PostCard({
                 key={url}
                 src={url}
                 alt=""
-                className="size-10 rounded object-cover"
+                className="size-8 rounded object-cover"
               />
             ))}
           </div>
         )}
-        <span className="text-xs text-muted-foreground">
-          {format(new Date(post.scheduledAt), "h:mm a")}
-        </span>
       </button>
     )
   }
@@ -116,25 +101,29 @@ export function PostCard({
   return (
     <button
       onClick={onClick}
+      style={style}
       className={cn(
-        "flex w-full flex-col gap-1 rounded-md border-l-2 bg-card px-2 py-1.5 text-left transition-all hover:bg-accent",
-        statusBorder[post.status]
+        "flex w-full flex-col gap-1 overflow-hidden rounded-lg border border-border bg-card px-2 py-1.5 text-left transition-colors hover:bg-muted",
+        className
       )}
     >
-      <div className="flex items-center gap-1">
-        {post.platforms.map((p) => {
-          const Icon = platformIcons[p]
-          return (
-            <Icon key={p} className={cn("size-3", platformColors[p])} />
-          )
-        })}
+      <div className="flex items-center gap-1.5">
+        {dot}
         <span className="flex-1 truncate text-xs font-medium">
           {post.content}
         </span>
       </div>
-      <span className="text-[10px] text-muted-foreground">
-        {format(new Date(post.scheduledAt), "h:mm a")}
-      </span>
+      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <span>{format(new Date(post.scheduledAt), "h:mm a")}</span>
+        <span>&middot;</span>
+        {post.platforms.map((p) => {
+          const config = platformConfig[p]
+          const Icon = config.icon
+          return (
+            <Icon key={p} className={cn("size-3", config.color)} />
+          )
+        })}
+      </div>
     </button>
   )
 }

@@ -6,6 +6,8 @@ import { getValidToken } from "@/lib/social/tokenRefresh"
 import { publishToTwitter } from "@/lib/social/twitter"
 import { publishToFacebook } from "@/lib/social/facebook"
 import { publishToInstagram } from "@/lib/social/instagram"
+import { publishToLinkedIn } from "@/lib/social/linkedin"
+import { publishToYouTube } from "@/lib/social/youtube"
 
 const receiver = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
@@ -103,6 +105,21 @@ export async function POST(req: NextRequest) {
               post.mediaUrls,
               account.accountId,
               decrypt(account.pageToken)
+            )
+            break
+          case "LINKEDIN":
+            result = await publishToLinkedIn(
+              post.content,
+              post.mediaUrls,
+              accessToken,
+              account.accountId
+            )
+            break
+          case "YOUTUBE":
+            result = await publishToYouTube(
+              post.content,
+              post.youtubeVideoId,
+              accessToken
             )
             break
         }

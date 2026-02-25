@@ -11,6 +11,10 @@ const platformPrompts: Record<string, string> = {
     "Write a Facebook post. Longer form, engaging, can include a call to action. Can be multiple paragraphs.",
   INSTAGRAM:
     "Write an Instagram caption (max 2200 characters). Caption style with heavy use of relevant hashtags. Emoji-friendly. Include line breaks for readability.",
+  LINKEDIN:
+    "Write a LinkedIn post. Professional tone, thought-leadership style. Can be multiple paragraphs with line breaks. Keep under 3000 characters. Minimal hashtags (2-3 max).",
+  YOUTUBE:
+    "Write a YouTube video title and description. First line is the title (max 100 chars), then a blank line, then the description (max 5000 chars total). Include relevant keywords and a call to action.",
 }
 
 export async function generateContent(

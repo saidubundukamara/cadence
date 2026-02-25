@@ -7,14 +7,15 @@ import {
   eachDayOfInterval,
   isToday,
 } from "date-fns"
-import type { CalendarPost } from "@/types"
+import type { CalendarPost, PostStats } from "@/types"
 
 interface CalendarState {
   currentWeekStart: Date
   searchQuery: string
-  platformFilter: "all" | "TWITTER" | "FACEBOOK" | "INSTAGRAM"
+  platformFilter: "all" | "TWITTER" | "FACEBOOK" | "INSTAGRAM" | "LINKEDIN" | "YOUTUBE"
   statusFilter: "all" | "PENDING" | "PUBLISHED" | "FAILED"
   selectedPostId: string | null
+  stats: PostStats
 
   // Actions
   goToNextWeek: () => void
@@ -26,6 +27,7 @@ interface CalendarState {
   setStatusFilter: (filter: CalendarState["statusFilter"]) => void
   selectPost: (id: string) => void
   clearSelection: () => void
+  setStats: (stats: PostStats) => void
 
   // Computed
   getWeekDays: () => Date[]
@@ -40,6 +42,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
   platformFilter: "all",
   statusFilter: "all",
   selectedPostId: null,
+  stats: { total: 0, published: 0, scheduled: 0, failed: 0 },
 
   goToNextWeek: () =>
     set((state) => ({
@@ -66,6 +69,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
   setStatusFilter: (filter) => set({ statusFilter: filter }),
   selectPost: (id) => set({ selectedPostId: id }),
   clearSelection: () => set({ selectedPostId: null }),
+  setStats: (stats) => set({ stats }),
 
   getWeekDays: () => {
     const { currentWeekStart } = get()

@@ -6,17 +6,11 @@ import { CalendarView } from "@/components/calendar/calendar-view"
 import { CalendarControls } from "@/components/calendar/calendar-controls"
 import { PostSheet } from "@/components/calendar/post-sheet"
 import { StatsCards } from "@/components/dashboard/StatsCards"
-import type { CalendarPost, PostStats } from "@/types"
+import type { CalendarPost } from "@/types"
 
 export default function DashboardPage() {
   const [posts, setPosts] = useState<CalendarPost[]>([])
-  const [stats, setStats] = useState<PostStats>({
-    total: 0,
-    published: 0,
-    scheduled: 0,
-    failed: 0,
-  })
-  const { currentWeekStart, getWeekEnd } = useCalendarStore()
+  const { currentWeekStart, getWeekEnd, setStats, stats } = useCalendarStore()
 
   useEffect(() => {
     const weekEnd = getWeekEnd()
@@ -37,11 +31,13 @@ export default function DashboardPage() {
         })
       })
       .catch(() => {})
-  }, [currentWeekStart, getWeekEnd])
+  }, [currentWeekStart, getWeekEnd, setStats])
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col gap-4">
-      <StatsCards stats={stats} />
+    <div className="flex h-[calc(100vh-3.5rem)] flex-col">
+      <div className="px-3 pt-4 md:px-6">
+        <StatsCards stats={stats} />
+      </div>
       <CalendarControls />
       <CalendarView posts={posts} />
       <PostSheet />

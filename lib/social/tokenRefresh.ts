@@ -78,6 +78,90 @@ export async function refreshFacebookToken(
   return newToken
 }
 
+export async function refreshLinkedInToken(
+  account: SocialAccount
+): Promise<string> {
+  if (!account.refreshToken) {
+    throw new Error("No refresh token available for LinkedIn")
+  }
+
+  const refreshToken = decrypt(account.refreshToken)
+
+  const res = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      client_id: process.env.LINKEDIN_CLIENT_ID!,
+      client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
+    }),
+  })
+
+  if (!res.ok) {
+    throw new Error(`LinkedIn token refresh failed: ${await res.text()}`)
+  }
+
+  const tokens = await res.json()
+  const expiresAt = tokens.expires_in
+    ? new Date(Date.now() + tokens.expires_in * 1000)
+    : null
+
+  await db.socialAccount.update({
+    where: { id: account.id },
+    data: {
+      accessToken: encrypt(tokens.access_token),
+      refreshToken: tokens.refresh_token
+        ? encrypt(tokens.refresh_token)
+        : account.refreshToken,
+      expiresAt,
+    },
+  })
+
+  return tokens.access_token
+}
+
+export async function refreshYouTubeToken(
+  account: SocialAccount
+): Promise<string> {
+  if (!account.refreshToken) {
+    throw new Error("No refresh token available for YouTube")
+  }
+
+  const refreshToken = decrypt(account.refreshToken)
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      client_id: process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+  })
+
+  if (!res.ok) {
+    throw new Error(`YouTube token refresh failed: ${await res.text()}`)
+  }
+
+  const tokens = await res.json()
+  const expiresAt = tokens.expires_in
+    ? new Date(Date.now() + tokens.expires_in * 1000)
+    : null
+
+  // Google does NOT return a new refresh_token on refresh — keep existing
+  await db.socialAccount.update({
+    where: { id: account.id },
+    data: {
+      accessToken: encrypt(tokens.access_token),
+      expiresAt,
+    },
+  })
+
+  return tokens.access_token
+}
+
 export async function getValidToken(
   account: SocialAccount
 ): Promise<string> {
@@ -89,6 +173,10 @@ export async function getValidToken(
       return refreshTwitterToken(account)
     } else if (account.platform === "FACEBOOK") {
       return refreshFacebookToken(account)
+    } else if (account.platform === "LINKEDIN") {
+      return refreshLinkedInToken(account)
+    } else if (account.platform === "YOUTUBE") {
+      return refreshYouTubeToken(account)
     }
   }
 

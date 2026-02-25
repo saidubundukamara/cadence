@@ -1,4 +1,5 @@
 import { TwitterApi, type SendTweetV2Params } from "twitter-api-v2"
+import { splitIntoThread } from "@/lib/twitter-thread"
 
 export async function publishToTwitter(
   content: string,
@@ -27,18 +28,30 @@ export async function publishToTwitter(
       }
     }
 
-    const tweetPayload: SendTweetV2Params = { text: content }
+    const chunks = splitIntoThread(content)
+
+    // Post first tweet (with media attached)
+    const firstPayload: SendTweetV2Params = { text: chunks[0] }
 
     if (mediaIds.length > 0) {
-      // Twitter API accepts 1-4 media IDs as a tuple
-      tweetPayload.media = {
+      firstPayload.media = {
         media_ids: mediaIds.slice(0, 4) as unknown as [string],
       }
     }
 
-    const tweet = await client.v2.tweet(tweetPayload)
+    const firstTweet = await client.v2.tweet(firstPayload)
+    let lastTweetId = firstTweet.data.id
 
-    return { platformPostId: tweet.data.id }
+    // Post remaining chunks as replies
+    for (let i = 1; i < chunks.length; i++) {
+      const reply = await client.v2.tweet({
+        text: chunks[i],
+        reply: { in_reply_to_tweet_id: lastTweetId },
+      })
+      lastTweetId = reply.data.id
+    }
+
+    return { platformPostId: firstTweet.data.id }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error"
     console.error("Twitter publish error:", message)

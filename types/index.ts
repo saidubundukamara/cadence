@@ -12,6 +12,7 @@ export type PostWithResults = {
   mediaUrls: string[]
   aiGenerated: boolean
   qstashId: string | null
+  youtubeVideoId: string | null
   createdAt: Date
   updatedAt: Date
   results: {

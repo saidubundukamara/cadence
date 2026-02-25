@@ -26,3 +26,11 @@ export function formatHourLabel(hour: number): string {
   if (hour < 12) return `${hour} AM`
   return `${hour - 12} PM`
 }
+
+export const HOURS_24 = Array.from({ length: 24 }, (_, i) => formatHourLabel(i))
+
+export function getPostVariant(height: number): "short" | "medium" | "full" {
+  if (height < 50) return "short"
+  if (height < 90) return "medium"
+  return "full"
+}

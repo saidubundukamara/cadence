@@ -16,7 +16,7 @@ export async function DELETE(
   const { platform } = await params
   const platformUpper = platform.toUpperCase() as Platform
 
-  if (!["TWITTER", "FACEBOOK", "INSTAGRAM"].includes(platformUpper)) {
+  if (!["TWITTER", "FACEBOOK", "INSTAGRAM", "LINKEDIN", "YOUTUBE"].includes(platformUpper)) {
     return NextResponse.json({ error: "Invalid platform" }, { status: 400 })
   }
 
@@ -59,6 +59,11 @@ export async function DELETE(
         await fetch(
           `https://graph.facebook.com/v21.0/me/permissions?access_token=${accessToken}`,
           { method: "DELETE" }
+        )
+      } else if (platformUpper === "YOUTUBE") {
+        await fetch(
+          `https://oauth2.googleapis.com/revoke?token=${accessToken}`,
+          { method: "POST" }
         )
       }
     } catch {

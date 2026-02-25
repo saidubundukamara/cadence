@@ -10,6 +10,7 @@ const updatePostSchema = z.object({
   platforms: z.array(z.nativeEnum(Platform)).min(1).optional(),
   scheduledAt: z.string().optional(),
   mediaUrls: z.array(z.string().url()).optional(),
+  youtubeVideoId: z.string().nullable().optional(),
 })
 
 export async function GET(
@@ -79,6 +80,7 @@ export async function PATCH(
         ...(data.platforms && { platforms: data.platforms }),
         ...(data.scheduledAt && { scheduledAt: new Date(data.scheduledAt) }),
         ...(data.mediaUrls && { mediaUrls: data.mediaUrls }),
+        ...(data.youtubeVideoId !== undefined && { youtubeVideoId: data.youtubeVideoId }),
       },
     })
 
@@ -122,6 +124,8 @@ export async function DELETE(
   }
 
   const { id } = await params
+  const { searchParams } = new URL(req.url)
+  const permanent = searchParams.get("permanent") === "true"
 
   const post = await db.post.findFirst({
     where: { id, userId: session.user.id },
@@ -136,10 +140,14 @@ export async function DELETE(
     await cancelPost(post.qstashId)
   }
 
-  await db.post.update({
-    where: { id },
-    data: { status: "CANCELLED" },
-  })
+  if (permanent) {
+    await db.post.delete({ where: { id } })
+  } else {
+    await db.post.update({
+      where: { id },
+      data: { status: "CANCELLED" },
+    })
+  }
 
   return NextResponse.json({ success: true })
 }

@@ -16,6 +16,7 @@ const createPostSchema = z.object({
   ),
   mediaUrls: z.array(z.string().url()).optional().default([]),
   aiGenerated: z.boolean().optional().default(false),
+  youtubeVideoId: z.string().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest) {
         scheduledAt: new Date(data.scheduledAt),
         mediaUrls: data.mediaUrls,
         aiGenerated: data.aiGenerated,
+        youtubeVideoId: data.youtubeVideoId,
       },
     })
 

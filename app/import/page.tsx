@@ -7,7 +7,8 @@ import { CSVImporter } from "@/components/import/CSVImporter"
 const CSV_TEMPLATE = `platform,content,scheduled_at,media_url
 TWITTER,"Check out our latest update!",2026-03-01T10:00:00Z,
 FACEBOOK,"Big announcement coming soon. Stay tuned!",2026-03-01T12:00:00Z,https://example.com/image.jpg
-INSTAGRAM,"Beautiful day",2026-03-02T09:00:00Z,https://example.com/photo.jpg`
+INSTAGRAM,"Beautiful day",2026-03-02T09:00:00Z,https://example.com/photo.jpg
+YOUTUBE,"My Video Title\nCheck out this amazing video!",2026-03-03T14:00:00Z,`
 
 function downloadTemplate() {
   const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" })

@@ -28,7 +28,7 @@ interface ValidatedRow extends CSVRow {
   valid: boolean
 }
 
-const VALID_PLATFORMS = ["TWITTER", "FACEBOOK", "INSTAGRAM"]
+const VALID_PLATFORMS = ["TWITTER", "FACEBOOK", "INSTAGRAM", "LINKEDIN", "YOUTUBE"]
 
 function validateRow(row: CSVRow, index: number): ValidatedRow {
   const errors: string[] = []

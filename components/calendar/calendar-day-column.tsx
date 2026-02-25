@@ -1,7 +1,8 @@
 "use client"
 
 import { isToday, isSameDay } from "date-fns"
-import { HOUR_HEIGHT, HOURS_IN_DAY, getPostTopPosition, getPostHeight } from "./calendar-utils"
+import { HOUR_HEIGHT, HOURS_IN_DAY, getPostTopPosition, getPostHeight, getPostVariant } from "./calendar-utils"
+import { PostCard } from "./post-card"
 import { CurrentTimeIndicator } from "./current-time-indicator"
 import { cn } from "@/lib/utils"
 import type { CalendarPost } from "@/types"
@@ -25,7 +26,7 @@ export function CalendarDayColumn({
   return (
     <div
       className={cn(
-        "relative flex-1 border-r last:border-r-0",
+        "relative min-w-28 flex-1 border-r pt-6 last:border-r-0 md:min-w-44",
         today && "bg-primary/[0.02]"
       )}
     >
@@ -33,7 +34,7 @@ export function CalendarDayColumn({
       {Array.from({ length: HOURS_IN_DAY }, (_, i) => (
         <div
           key={i}
-          className="border-b border-border/50"
+          className="border-b border-border"
           style={{ height: HOUR_HEIGHT }}
         />
       ))}
@@ -44,37 +45,18 @@ export function CalendarDayColumn({
       {/* Posts */}
       {dayPosts.map((post) => {
         const top = getPostTopPosition(post.scheduledAt)
-        const height = getPostHeight(30) // Default 30-min duration
-
-        const statusColors: Record<string, string> = {
-          PENDING: "border-l-muted-foreground/50 bg-muted/50",
-          PUBLISHED: "border-l-green-500 bg-green-500/10",
-          FAILED: "border-l-red-500 bg-red-500/10",
-          CANCELLED: "border-l-muted-foreground/30 bg-muted/30 opacity-50",
-        }
+        const rawHeight = getPostHeight(30)
+        const clampedHeight = Math.max(rawHeight, 30)
 
         return (
-          <button
+          <PostCard
             key={post.id}
-            className={cn(
-              "absolute right-1 left-1 z-10 cursor-pointer overflow-hidden rounded-md border-l-2 px-2 py-1 text-left transition-all hover:shadow-md",
-              statusColors[post.status] || statusColors.PENDING
-            )}
-            style={{ top, height: Math.max(height, 30) }}
+            post={post}
+            variant={getPostVariant(clampedHeight)}
             onClick={() => onPostClick(post.id)}
-          >
-            <p className="truncate text-xs font-medium">{post.content}</p>
-            <div className="mt-0.5 flex gap-1">
-              {post.platforms.map((p) => (
-                <span
-                  key={p}
-                  className="text-[9px] font-medium uppercase text-muted-foreground"
-                >
-                  {p === "TWITTER" ? "X" : p.slice(0, 2)}
-                </span>
-              ))}
-            </div>
-          </button>
+            style={{ top: top + 24 + 4, height: clampedHeight - 8 }}
+            className="absolute left-2 right-2 z-10"
+          />
         )
       })}
     </div>

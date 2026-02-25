@@ -26,19 +26,22 @@ export function CalendarView({ posts }: CalendarViewProps) {
   }, [])
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-lg border">
-      <CalendarWeekHeader />
-      <div ref={scrollRef} className="flex flex-1 overflow-auto">
-        <CalendarHoursColumn />
-        <div className="flex flex-1">
-          {days.map((day) => (
-            <CalendarDayColumn
-              key={day.toISOString()}
-              day={day}
-              posts={filteredPosts}
-              onPostClick={selectPost}
-            />
-          ))}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border">
+      <div ref={scrollRef} className="flex-1 overflow-auto">
+        {/* Header inside scroll container so it scrolls horizontally with columns */}
+        <CalendarWeekHeader weekDays={days} />
+        <div className="flex">
+          <CalendarHoursColumn />
+          <div className="flex flex-1">
+            {days.map((day) => (
+              <CalendarDayColumn
+                key={day.toISOString()}
+                day={day}
+                posts={filteredPosts}
+                onPostClick={selectPost}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
