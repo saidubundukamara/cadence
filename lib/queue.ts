@@ -32,3 +32,12 @@ export async function cancelPost(qstashId: string): Promise<void> {
     console.error("Failed to cancel QStash message:", error)
   }
 }
+
+export async function scheduleWeeklySuggestions(): Promise<void> {
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+  await qstash.schedules.create({
+    destination: `${baseUrl}/api/cron/suggestions`,
+    cron: "0 6 * * 1",
+    retries: 2,
+  })
+}
