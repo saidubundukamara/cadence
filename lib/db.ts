@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 // Bump this when schema changes to invalidate the cached client in dev
-const SCHEMA_VERSION = "2"
+const SCHEMA_VERSION = "3"
 
 function createPrismaClient() {
   const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! })

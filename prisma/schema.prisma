@@ -19,13 +19,18 @@ model User {
   notifyOnPublish Boolean         @default(true)
   notifyOnFail    Boolean         @default(true)
   createdAt      DateTime        @default(now())
-  accounts       Account[]
-  sessions       Session[]
-  socialAccounts SocialAccount[]
-  posts          Post[]
-  tags           Tag[]
-  notifications  Notification[]
-  media          Media[]
+  accounts        Account[]
+  sessions        Session[]
+  socialAccounts  SocialAccount[]
+  posts           Post[]
+  tags            Tag[]
+  notifications   Notification[]
+  media           Media[]
+  extensionTokens ExtensionToken[]
+  boards          Board[]
+  inspirations    Inspiration[]
+  suggestedPosts  SuggestedPost[]
+  styleMemory     StyleMemory[]
 }
 
 model Account {
@@ -156,6 +161,7 @@ enum NotificationType {
   PUBLISH_SUCCESS
   PUBLISH_FAILURE
   SYSTEM
+  AI_DRAFT
 }
 
 model PostPlatformContent {
@@ -193,4 +199,86 @@ enum PostStatus {
   PUBLISHED
   FAILED
   CANCELLED
+}
+
+enum SuggestionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  PUBLISHED
+}
+
+model ExtensionToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Board {
+  id           String        @id @default(cuid())
+  userId       String
+  name         String
+  description  String?
+  coverImage   String?
+  isDefault    Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inspirations Inspiration[]
+
+  @@unique([userId, name])
+}
+
+model Inspiration {
+  id             String   @id @default(cuid())
+  userId         String
+  boardId        String
+  originalUrl    String
+  sourcePlatform String
+  content        String?
+  authorName     String?
+  authorHandle   String?
+  authorAvatar   String?
+  thumbnailUrl   String?
+  note           String?
+  savedAt        DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  board          Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+}
+
+model SuggestedPost {
+  id              String           @id @default(cuid())
+  userId          String
+  platform        Platform
+  content         String
+  topic           String?
+  tone            String?
+  weekOf          DateTime
+  status          SuggestionStatus @default(PENDING)
+  inspirationIds  String[]
+  acceptedAt      DateTime?
+  rejectedAt      DateTime?
+  convertedPostId String?
+  createdAt       DateTime         @default(now())
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StyleMemory {
+  id            String   @id @default(cuid())
+  userId        String
+  platform      Platform
+  acceptedTones String[]
+  rejectedTones String[]
+  topTopics     String[]
+  avgPostLength Int?
+  usesEmoji     Boolean  @default(false)
+  usesHashtags  Boolean  @default(false)
+  samplePosts   String[]
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
 }
