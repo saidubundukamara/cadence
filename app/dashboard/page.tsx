@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useCalendarStore } from "@/store/calendar-store"
 import { CalendarView } from "@/components/calendar/calendar-view"
+import { CalendarMonthView } from "@/components/calendar/calendar-month-view"
 import { CalendarControls } from "@/components/calendar/calendar-controls"
 import { PostSheet } from "@/components/calendar/post-sheet"
 import { StatsCards } from "@/components/dashboard/StatsCards"
@@ -10,13 +11,21 @@ import type { CalendarPost } from "@/types"
 
 export default function DashboardPage() {
   const [posts, setPosts] = useState<CalendarPost[]>([])
-  const { currentWeekStart, getWeekEnd, setStats, stats } = useCalendarStore()
+  const {
+    currentWeekStart,
+    viewMode,
+    getDateRangeStart,
+    getDateRangeEnd,
+    setStats,
+    stats,
+  } = useCalendarStore()
 
-  useEffect(() => {
-    const weekEnd = getWeekEnd()
+  const fetchPosts = useCallback(() => {
+    const rangeStart = getDateRangeStart()
+    const rangeEnd = getDateRangeEnd()
     const params = new URLSearchParams({
-      from: currentWeekStart.toISOString(),
-      to: weekEnd.toISOString(),
+      from: rangeStart.toISOString(),
+      to: rangeEnd.toISOString(),
     })
 
     fetch(`/api/posts?${params}`)
@@ -31,7 +40,22 @@ export default function DashboardPage() {
         })
       })
       .catch(() => {})
-  }, [currentWeekStart, getWeekEnd, setStats])
+  }, [getDateRangeStart, getDateRangeEnd, setStats])
+
+  useEffect(() => {
+    fetchPosts()
+  }, [currentWeekStart, viewMode, fetchPosts])
+
+  async function handleReschedule(postId: string, newDate: Date) {
+    const res = await fetch(`/api/posts/${postId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduledAt: newDate.toISOString() }),
+    })
+    if (res.ok) {
+      fetchPosts()
+    }
+  }
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col">
@@ -39,7 +63,11 @@ export default function DashboardPage() {
         <StatsCards stats={stats} />
       </div>
       <CalendarControls />
-      <CalendarView posts={posts} />
+      {viewMode === "week" ? (
+        <CalendarView posts={posts} onReschedule={handleReschedule} />
+      ) : (
+        <CalendarMonthView posts={posts} />
+      )}
       <PostSheet />
     </div>
   )

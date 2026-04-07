@@ -6,6 +6,7 @@ import { platformConfig } from "@/lib/platform-config"
 import type { CalendarPost } from "@/types"
 
 const statusDotColor: Record<string, string> = {
+  DRAFT: "bg-gray-400",
   PENDING: "bg-yellow-500",
   PUBLISHED: "bg-green-500",
   FAILED: "bg-red-500",
@@ -18,6 +19,7 @@ interface PostCardProps {
   onClick?: () => void
   style?: React.CSSProperties
   className?: string
+  draggable?: boolean
 }
 
 export function PostCard({
@@ -26,7 +28,13 @@ export function PostCard({
   onClick,
   style,
   className,
+  draggable,
 }: PostCardProps) {
+  function handleDragStart(e: React.DragEvent) {
+    e.dataTransfer.setData("text/post-id", post.id)
+    e.dataTransfer.effectAllowed = "move"
+  }
+
   const dot = (
     <span
       className={cn(
@@ -41,15 +49,18 @@ export function PostCard({
       <button
         onClick={onClick}
         style={style}
+        draggable={draggable}
+        onDragStart={handleDragStart}
         className={cn(
           "flex w-full items-center gap-2 overflow-hidden rounded-lg border border-border bg-card px-2 py-1 text-left transition-colors hover:bg-muted",
+          draggable && "cursor-grab active:cursor-grabbing",
           className
         )}
       >
         {dot}
         <span className="flex-1 truncate text-xs">{post.content}</span>
         <span className="shrink-0 text-[10px] text-muted-foreground">
-          {format(new Date(post.scheduledAt), "h:mm a")}
+          {format(new Date(post.scheduledAt!), "h:mm a")}
         </span>
       </button>
     )
@@ -60,8 +71,11 @@ export function PostCard({
       <button
         onClick={onClick}
         style={style}
+        draggable={draggable}
+        onDragStart={handleDragStart}
         className={cn(
           "flex w-full flex-col gap-1.5 overflow-hidden rounded-lg border border-border bg-card p-2.5 text-left transition-colors hover:bg-muted",
+          draggable && "cursor-grab active:cursor-grabbing",
           className
         )}
       >
@@ -70,7 +84,7 @@ export function PostCard({
           <p className="line-clamp-2 flex-1 text-xs font-medium">{post.content}</p>
         </div>
         <span className="text-[10px] text-muted-foreground">
-          {format(new Date(post.scheduledAt), "h:mm a")}
+          {format(new Date(post.scheduledAt!), "h:mm a")}
         </span>
         <div className="flex gap-1">
           {post.platforms.map((p) => {
@@ -102,8 +116,11 @@ export function PostCard({
     <button
       onClick={onClick}
       style={style}
+      draggable={draggable}
+      onDragStart={handleDragStart}
       className={cn(
         "flex w-full flex-col gap-1 overflow-hidden rounded-lg border border-border bg-card px-2 py-1.5 text-left transition-colors hover:bg-muted",
+        draggable && "cursor-grab active:cursor-grabbing",
         className
       )}
     >
@@ -114,7 +131,7 @@ export function PostCard({
         </span>
       </div>
       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <span>{format(new Date(post.scheduledAt), "h:mm a")}</span>
+        <span>{format(new Date(post.scheduledAt!), "h:mm a")}</span>
         <span>&middot;</span>
         {post.platforms.map((p) => {
           const config = platformConfig[p]

@@ -15,9 +15,16 @@ import { Button } from "@/components/ui/button"
 
 type StatusCounts = {
   all: number
+  draft: number
   pending: number
   published: number
   failed: number
+}
+
+type TagOption = {
+  id: string
+  name: string
+  color: string
 }
 
 type PostsToolbarProps = {
@@ -27,6 +34,9 @@ type PostsToolbarProps = {
   onStatusFilterChange: (value: string) => void
   sortBy: string
   onSortByChange: (value: string) => void
+  tagFilter: string
+  onTagFilterChange: (value: string) => void
+  tags: TagOption[]
   counts: StatusCounts
   selectedCount: number
   onBulkDelete: () => void
@@ -41,6 +51,9 @@ export function PostsToolbar({
   onStatusFilterChange,
   sortBy,
   onSortByChange,
+  tagFilter,
+  onTagFilterChange,
+  tags,
   counts,
   selectedCount,
   onBulkDelete,
@@ -72,6 +85,12 @@ export function PostsToolbar({
                 {counts.all}
               </Badge>
             </TabsTrigger>
+            <TabsTrigger value="DRAFT" className="gap-1.5">
+              Drafts
+              <Badge variant="secondary" className="h-5 min-w-5 px-1 text-xs">
+                {counts.draft}
+              </Badge>
+            </TabsTrigger>
             <TabsTrigger value="PENDING" className="gap-1.5">
               Pending
               <Badge variant="secondary" className="h-5 min-w-5 px-1 text-xs">
@@ -94,18 +113,42 @@ export function PostsToolbar({
         </Tabs>
       </div>
 
-      {/* Row 2: Sort + Bulk actions */}
+      {/* Row 2: Sort + Tag filter + Bulk actions */}
       <div className="flex items-center justify-between">
-        <Select value={sortBy} onValueChange={onSortByChange}>
-          <SelectTrigger className="w-[140px]" size="sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Newest first</SelectItem>
-            <SelectItem value="oldest">Oldest first</SelectItem>
-            <SelectItem value="platform">By platform</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={sortBy} onValueChange={onSortByChange}>
+            <SelectTrigger className="w-[140px]" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest first</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="platform">By platform</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {tags.length > 0 && (
+            <Select value={tagFilter} onValueChange={onTagFilterChange}>
+              <SelectTrigger className="w-[140px]" size="sm">
+                <SelectValue placeholder="All tags" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All tags</SelectItem>
+                {tags.map((tag) => (
+                  <SelectItem key={tag.id} value={tag.id}>
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className="size-2 rounded-full"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      {tag.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
 
         {selectedCount > 0 && (
           <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">

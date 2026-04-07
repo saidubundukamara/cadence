@@ -15,11 +15,12 @@ export async function publishToTwitter(
     if (mediaUrls.length > 0) {
       for (const url of mediaUrls) {
         try {
-          const imageRes = await fetch(url)
-          const buffer = Buffer.from(await imageRes.arrayBuffer())
+          const isVideo = /\.(mp4|mov|avi|wmv)$/i.test(url)
+          const res = await fetch(url)
+          const buffer = Buffer.from(await res.arrayBuffer())
 
           const mediaId = await client.v1.uploadMedia(buffer, {
-            mimeType: "image/jpeg",
+            mimeType: isVideo ? "video/mp4" : "image/jpeg",
           })
           mediaIds.push(mediaId)
         } catch (e) {

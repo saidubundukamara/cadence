@@ -2,6 +2,8 @@
 
 import { format } from "date-fns"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
+import { AiCopilot } from "@/components/ai/AiCopilot"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { CreatePostDialog } from "./create-post-dialog"
@@ -25,7 +27,9 @@ export function CalendarHeader() {
         </div>
       </div>
       <div className="flex items-center gap-2">
+        <AiCopilot />
         <CreatePostDialog />
+        <NotificationBell />
         <ThemeToggle />
       </div>
     </header>

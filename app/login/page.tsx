@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -18,8 +18,11 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const verified = searchParams.get("verified") === "true"
+  const tokenError = searchParams.get("error")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -167,6 +170,20 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {verified && (
+              <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-3.5 text-sm text-green-700 dark:text-green-400">
+                Email verified successfully! You can now sign in.
+              </div>
+            )}
+            {tokenError && (
+              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3.5 text-sm text-destructive">
+                {tokenError === "expired-token"
+                  ? "Verification link has expired. Please register again."
+                  : tokenError === "invalid-token"
+                    ? "Invalid verification link."
+                    : "Verification failed."}
+              </div>
+            )}
             {error && (
               <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3.5 text-sm text-destructive">
                 {error}
@@ -188,9 +205,17 @@ export default function LoginPage() {
               )}
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -220,5 +245,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

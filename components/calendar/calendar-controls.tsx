@@ -1,7 +1,7 @@
 "use client"
 
 import { format } from "date-fns"
-import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Check } from "lucide-react"
+import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Check, CalendarDays, LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -28,6 +28,8 @@ const statusOptions = [
 export function CalendarControls() {
   const {
     currentWeekStart,
+    viewMode,
+    setViewMode,
     searchQuery,
     setSearchQuery,
     platformFilter,
@@ -36,13 +38,16 @@ export function CalendarControls() {
     setStatusFilter,
     goToToday,
     goToDate,
-    goToPreviousWeek,
-    goToNextWeek,
+    goToPrevious,
+    goToNext,
     getWeekEnd,
+    getDateRangeStart,
+    getDateRangeEnd,
     isCurrentWeek,
   } = useCalendarStore()
 
-  const weekEnd = getWeekEnd()
+  const rangeStart = getDateRangeStart()
+  const rangeEnd = getDateRangeEnd()
   const hasActiveFilters = platformFilter !== "all" || statusFilter !== "all"
 
   return (
@@ -58,13 +63,35 @@ export function CalendarControls() {
         />
       </div>
 
+      {/* View mode toggle */}
+      <div className="flex items-center rounded-md border">
+        <Button
+          variant={viewMode === "week" ? "secondary" : "ghost"}
+          size="sm"
+          className="h-7 gap-1 rounded-r-none px-2 text-xs"
+          onClick={() => setViewMode("week")}
+        >
+          <CalendarDays className="size-3.5" />
+          Week
+        </Button>
+        <Button
+          variant={viewMode === "month" ? "secondary" : "ghost"}
+          size="sm"
+          className="h-7 gap-1 rounded-l-none px-2 text-xs"
+          onClick={() => setViewMode("month")}
+        >
+          <LayoutGrid className="size-3.5" />
+          Month
+        </Button>
+      </div>
+
       {/* Navigation group */}
       <div className="flex items-center gap-0.5">
         <Button
           variant="outline"
           size="icon"
           className="size-8"
-          onClick={goToPreviousWeek}
+          onClick={goToPrevious}
         >
           <ChevronLeft className="size-4" />
         </Button>
@@ -80,7 +107,7 @@ export function CalendarControls() {
           variant="outline"
           size="icon"
           className="size-8"
-          onClick={goToNextWeek}
+          onClick={goToNext}
         >
           <ChevronRight className="size-4" />
         </Button>
@@ -90,8 +117,9 @@ export function CalendarControls() {
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm">
-            {format(currentWeekStart, "MMM d")} &ndash;{" "}
-            {format(weekEnd, "MMM d, yyyy")}
+            {viewMode === "month"
+              ? format(currentWeekStart, "MMMM yyyy")
+              : `${format(rangeStart, "MMM d")} \u2013 ${format(rangeEnd, "MMM d, yyyy")}`}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">

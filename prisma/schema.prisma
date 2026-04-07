@@ -23,6 +23,9 @@ model User {
   sessions       Session[]
   socialAccounts SocialAccount[]
   posts          Post[]
+  tags           Tag[]
+  notifications  Notification[]
+  media          Media[]
 }
 
 model Account {
@@ -69,20 +72,100 @@ model SocialAccount {
 }
 
 model Post {
-  id              String      @id @default(cuid())
-  userId          String
-  content         String
-  platforms       Platform[]
-  scheduledAt     DateTime
-  status          PostStatus  @default(PENDING)
-  mediaUrls       String[]
-  aiGenerated     Boolean     @default(false)
-  qstashId        String?
-  youtubeVideoId  String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  results         PostResult[]
+  id               String                @id @default(cuid())
+  userId           String
+  content          String
+  platforms        Platform[]
+  scheduledAt      DateTime?
+  status           PostStatus            @default(PENDING)
+  mediaUrls        String[]
+  aiGenerated      Boolean               @default(false)
+  qstashId         String?
+  youtubeVideoId   String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  results          PostResult[]
+  platformContents PostPlatformContent[]
+  tags             Tag[]
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#6366f1")
+  userId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts     Post[]
+
+  @@unique([userId, name])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  postId    String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Media {
+  id        String    @id @default(cuid())
+  userId    String
+  url       String
+  type      MediaType @default(IMAGE)
+  filename  String?
+  size      Int?
+  width     Int?
+  height    Int?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}
+
+enum NotificationType {
+  PUBLISH_SUCCESS
+  PUBLISH_FAILURE
+  SYSTEM
+}
+
+model PostPlatformContent {
+  id        String   @id @default(cuid())
+  postId    String
+  platform  Platform
+  content   String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, platform])
 }
 
 model PostResult {
@@ -105,6 +188,7 @@ enum Platform {
 }
 
 enum PostStatus {
+  DRAFT
   PENDING
   PUBLISHED
   FAILED

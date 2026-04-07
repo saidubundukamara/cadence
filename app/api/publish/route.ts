@@ -8,6 +8,7 @@ import { publishToFacebook } from "@/lib/social/facebook"
 import { publishToInstagram } from "@/lib/social/instagram"
 import { publishToLinkedIn } from "@/lib/social/linkedin"
 import { publishToYouTube } from "@/lib/social/youtube"
+import { createNotification } from "@/lib/notifications"
 
 const receiver = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
         user: {
           include: { socialAccounts: true },
         },
+        platformContents: true,
       },
     })
 
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (post.status !== "PENDING") {
-      return NextResponse.json({ error: "Post already processed" }, { status: 400 })
+      return NextResponse.json({ error: "Post not in pending status" }, { status: 400 })
     }
 
     const results: { platform: string; success: boolean; postId?: string; error?: string }[] = []
@@ -73,12 +75,18 @@ export async function POST(req: NextRequest) {
       try {
         // Get valid (refreshed if needed) token
         const accessToken = await getValidToken(account)
+
+        // Use platform-specific content if available, fall back to master content
+        const platformContent =
+          post.platformContents.find((pc) => pc.platform === platform)
+            ?.content ?? post.content
+
         let result
 
         switch (platform) {
           case "TWITTER":
             result = await publishToTwitter(
-              post.content,
+              platformContent,
               post.mediaUrls,
               accessToken
             )
@@ -89,7 +97,7 @@ export async function POST(req: NextRequest) {
               break
             }
             result = await publishToFacebook(
-              post.content,
+              platformContent,
               post.mediaUrls,
               account.pageId,
               decrypt(account.pageToken)
@@ -101,7 +109,7 @@ export async function POST(req: NextRequest) {
               break
             }
             result = await publishToInstagram(
-              post.content,
+              platformContent,
               post.mediaUrls,
               account.accountId,
               decrypt(account.pageToken)
@@ -109,7 +117,7 @@ export async function POST(req: NextRequest) {
             break
           case "LINKEDIN":
             result = await publishToLinkedIn(
-              post.content,
+              platformContent,
               post.mediaUrls,
               accessToken,
               account.accountId
@@ -117,7 +125,7 @@ export async function POST(req: NextRequest) {
             break
           case "YOUTUBE":
             result = await publishToYouTube(
-              post.content,
+              platformContent,
               post.youtubeVideoId,
               accessToken
             )
@@ -162,13 +170,39 @@ export async function POST(req: NextRequest) {
     // Update post status
     const allSucceeded = results.every((r) => r.success)
     const anyFailed = results.some((r) => !r.success)
+    const finalStatus = allSucceeded ? "PUBLISHED" : "FAILED"
 
     await db.post.update({
       where: { id: post.id },
-      data: {
-        status: allSucceeded ? "PUBLISHED" : anyFailed ? "FAILED" : "PUBLISHED",
-      },
+      data: { status: finalStatus },
     })
+
+    // Create notifications
+    const successPlatforms = results.filter((r) => r.success).map((r) => r.platform)
+    const failedPlatforms = results.filter((r) => !r.success)
+
+    if (successPlatforms.length > 0) {
+      await createNotification({
+        userId: post.userId,
+        type: "PUBLISH_SUCCESS",
+        title: "Post published",
+        message: `Your post was published to ${successPlatforms.join(", ")}.`,
+        postId: post.id,
+      })
+    }
+
+    if (failedPlatforms.length > 0) {
+      const failDetails = failedPlatforms
+        .map((r) => `${r.platform}: ${r.error}`)
+        .join("; ")
+      await createNotification({
+        userId: post.userId,
+        type: "PUBLISH_FAILURE",
+        title: "Post failed to publish",
+        message: `Failed on ${failedPlatforms.map((r) => r.platform).join(", ")}. ${failDetails}`,
+        postId: post.id,
+      })
+    }
 
     return NextResponse.json({ results })
   } catch (error) {

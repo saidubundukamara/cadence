@@ -103,10 +103,10 @@ export function PostSheet() {
           {post && (
             <SheetDescription className="flex items-center gap-2">
               <CalendarDays className="size-3.5" />
-              {format(new Date(post.scheduledAt), "EEEE, MMM d, yyyy")}
+              {post.scheduledAt ? format(new Date(post.scheduledAt), "EEEE, MMM d, yyyy") : "No date"}
               <span>&middot;</span>
               <Clock className="size-3.5" />
-              {format(new Date(post.scheduledAt), "h:mm a")}
+              {post.scheduledAt ? format(new Date(post.scheduledAt), "h:mm a") : "—"}
             </SheetDescription>
           )}
         </SheetHeader>

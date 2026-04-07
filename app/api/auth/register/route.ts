@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import { db } from "@/lib/db"
+import { createVerificationToken } from "@/lib/tokens"
+import { sendVerificationEmail } from "@/lib/email"
 
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -28,8 +30,19 @@ export async function POST(req: Request) {
       data: { name, email, password: hashedPassword },
     })
 
+    // Send verification email
+    try {
+      const verificationToken = await createVerificationToken(email)
+      await sendVerificationEmail(email, verificationToken.token)
+    } catch (error) {
+      console.error("Failed to send verification email:", error)
+    }
+
     return NextResponse.json(
-      { user: { id: user.id, name: user.name, email: user.email } },
+      {
+        user: { id: user.id, name: user.name, email: user.email },
+        message: "Account created. Please check your email to verify your account.",
+      },
       { status: 201 }
     )
   } catch (error) {

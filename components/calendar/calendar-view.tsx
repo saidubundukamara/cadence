@@ -10,9 +10,10 @@ import type { CalendarPost } from "@/types"
 
 interface CalendarViewProps {
   posts: CalendarPost[]
+  onReschedule?: (postId: string, newDate: Date) => void
 }
 
-export function CalendarView({ posts }: CalendarViewProps) {
+export function CalendarView({ posts, onReschedule }: CalendarViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const { getWeekDays, selectPost, getFilteredPosts } = useCalendarStore()
   const days = getWeekDays()
@@ -39,6 +40,7 @@ export function CalendarView({ posts }: CalendarViewProps) {
                 day={day}
                 posts={filteredPosts}
                 onPostClick={selectPost}
+                onReschedule={onReschedule}
               />
             ))}
           </div>

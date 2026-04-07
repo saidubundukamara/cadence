@@ -8,7 +8,7 @@ import { PostsToolbar } from "@/components/posts/PostsToolbar"
 import { PostCardList } from "@/components/posts/PostCardList"
 import { PostsLoadingSkeleton } from "@/components/posts/PostsLoadingSkeleton"
 import { PostsEmptyState } from "@/components/posts/PostsEmptyState"
-import type { PostWithResults } from "@/types"
+import type { PostWithResults, PostTag } from "@/types"
 
 export default function PostsPage() {
   const [posts, setPosts] = useState<PostWithResults[]>([])
@@ -17,6 +17,15 @@ export default function PostsPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState("newest")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [tags, setTags] = useState<PostTag[]>([])
+  const [tagFilter, setTagFilter] = useState("all")
+
+  useEffect(() => {
+    fetch("/api/tags")
+      .then((res) => res.json())
+      .then(setTags)
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     fetchPosts()
@@ -36,6 +45,7 @@ export default function PostsPage() {
   const counts = useMemo(() => {
     return {
       all: posts.length,
+      draft: posts.filter((p) => p.status === "DRAFT").length,
       pending: posts.filter((p) => p.status === "PENDING").length,
       published: posts.filter((p) => p.status === "PUBLISHED").length,
       failed: posts.filter((p) => p.status === "FAILED").length,
@@ -51,15 +61,25 @@ export default function PostsPage() {
       result = result.filter((p) => p.content.toLowerCase().includes(q))
     }
 
+    if (tagFilter !== "all") {
+      result = result.filter((p) =>
+        p.tags?.some((t) => t.id === tagFilter)
+      )
+    }
+
     result = [...result].sort((a, b) => {
+      const dateA = a.scheduledAt ? new Date(a.scheduledAt).getTime() : new Date(a.createdAt).getTime()
+      const dateB = b.scheduledAt ? new Date(b.scheduledAt).getTime() : new Date(b.createdAt).getTime()
       if (sortBy === "newest") {
-        return new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()
+        return dateB - dateA
       }
       if (sortBy === "oldest") {
-        return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+        return dateA - dateB
       }
       // By platform — sort by first platform name
-      return a.platforms[0].localeCompare(b.platforms[0])
+      const platA = a.platforms[0] ?? ""
+      const platB = b.platforms[0] ?? ""
+      return platA.localeCompare(platB)
     })
 
     return result
@@ -122,11 +142,11 @@ export default function PostsPage() {
   async function handleBulkDelete() {
     const pendingIds = [...selectedIds].filter((id) => {
       const post = posts.find((p) => p.id === id)
-      return post?.status === "PENDING"
+      return post?.status === "PENDING" || post?.status === "DRAFT"
     })
 
     if (pendingIds.length === 0) {
-      toast.error("Only pending posts can be cancelled")
+      toast.error("Only pending or draft posts can be cancelled")
       return
     }
 
@@ -182,7 +202,7 @@ export default function PostsPage() {
     setSelectedIds(new Set())
   }
 
-  const hasFilters = search !== "" || statusFilter !== "all"
+  const hasFilters = search !== "" || statusFilter !== "all" || tagFilter !== "all"
 
   return (
     <TooltipProvider>
@@ -199,6 +219,9 @@ export default function PostsPage() {
           }}
           sortBy={sortBy}
           onSortByChange={setSortBy}
+          tagFilter={tagFilter}
+          onTagFilterChange={setTagFilter}
+          tags={tags}
           counts={counts}
           selectedCount={selectedIds.size}
           onBulkDelete={handleBulkDelete}

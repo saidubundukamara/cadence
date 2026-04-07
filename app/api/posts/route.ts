@@ -7,16 +7,22 @@ import { Platform } from "@/generated/prisma/client"
 
 const createPostSchema = z.object({
   content: z.string().min(1, "Content is required"),
-  platforms: z
-    .array(z.nativeEnum(Platform))
-    .min(1, "Select at least one platform"),
-  scheduledAt: z.string().refine(
-    (val) => new Date(val) > new Date(),
-    "Scheduled time must be in the future"
-  ),
+  platforms: z.array(z.nativeEnum(Platform)).optional().default([]),
+  scheduledAt: z.string().nullable().optional(),
   mediaUrls: z.array(z.string().url()).optional().default([]),
   aiGenerated: z.boolean().optional().default(false),
   youtubeVideoId: z.string().optional(),
+  isDraft: z.boolean().optional().default(false),
+  tagIds: z.array(z.string()).optional().default([]),
+  platformContents: z
+    .array(
+      z.object({
+        platform: z.nativeEnum(Platform),
+        content: z.string(),
+      })
+    )
+    .optional()
+    .default([]),
 })
 
 export async function GET(req: NextRequest) {
@@ -29,6 +35,7 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status")
   const from = searchParams.get("from")
   const to = searchParams.get("to")
+  const tagId = searchParams.get("tagId")
 
   const where: Record<string, unknown> = { userId: session.user.id }
 
@@ -42,9 +49,13 @@ export async function GET(req: NextRequest) {
     if (to) (where.scheduledAt as Record<string, Date>).lte = new Date(to)
   }
 
+  if (tagId) {
+    where.tags = { some: { id: tagId } }
+  }
+
   const posts = await db.post.findMany({
     where,
-    include: { results: true },
+    include: { results: true, platformContents: true, tags: true },
     orderBy: { scheduledAt: "asc" },
   })
 
@@ -60,24 +71,41 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const data = createPostSchema.parse(body)
+    const isDraft = data.isDraft
 
-    // Verify user has connected accounts for each platform
-    const connectedAccounts = await db.socialAccount.findMany({
-      where: { userId: session.user.id },
-      select: { platform: true },
-    })
-    const connectedPlatforms = new Set(connectedAccounts.map((a) => a.platform))
+    // For scheduled posts, validate platforms and scheduledAt
+    if (!isDraft) {
+      if (data.platforms.length === 0) {
+        return NextResponse.json(
+          { error: "Select at least one platform" },
+          { status: 400 }
+        )
+      }
+      if (!data.scheduledAt || new Date(data.scheduledAt) <= new Date()) {
+        return NextResponse.json(
+          { error: "Scheduled time must be in the future" },
+          { status: 400 }
+        )
+      }
 
-    const missingPlatforms = data.platforms.filter(
-      (p) => !connectedPlatforms.has(p)
-    )
-    if (missingPlatforms.length > 0) {
-      return NextResponse.json(
-        {
-          error: `Not connected to: ${missingPlatforms.join(", ")}. Connect in Settings > Connections.`,
-        },
-        { status: 400 }
+      // Verify user has connected accounts for each platform
+      const connectedAccounts = await db.socialAccount.findMany({
+        where: { userId: session.user.id },
+        select: { platform: true },
+      })
+      const connectedPlatforms = new Set(connectedAccounts.map((a) => a.platform))
+
+      const missingPlatforms = data.platforms.filter(
+        (p) => !connectedPlatforms.has(p)
       )
+      if (missingPlatforms.length > 0) {
+        return NextResponse.json(
+          {
+            error: `Not connected to: ${missingPlatforms.join(", ")}. Connect in Settings > Connections.`,
+          },
+          { status: 400 }
+        )
+      }
     }
 
     const post = await db.post.create({
@@ -85,26 +113,47 @@ export async function POST(req: NextRequest) {
         userId: session.user.id,
         content: data.content,
         platforms: data.platforms,
-        scheduledAt: new Date(data.scheduledAt),
+        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
+        status: isDraft ? "DRAFT" : "PENDING",
         mediaUrls: data.mediaUrls,
         aiGenerated: data.aiGenerated,
         youtubeVideoId: data.youtubeVideoId,
+        ...(data.tagIds.length > 0 && {
+          tags: { connect: data.tagIds.map((id) => ({ id })) },
+        }),
       },
     })
 
-    // Schedule via QStash
-    try {
-      const qstashId = await schedulePost(post.id, new Date(data.scheduledAt))
-      await db.post.update({
-        where: { id: post.id },
-        data: { qstashId },
+    // Save per-platform content if provided
+    if (data.platformContents.length > 0) {
+      await db.postPlatformContent.createMany({
+        data: data.platformContents.map((pc) => ({
+          postId: post.id,
+          platform: pc.platform,
+          content: pc.content,
+        })),
       })
-    } catch (error) {
-      console.error("QStash scheduling failed:", error)
-      // Post is created but not queued - can be retried
     }
 
-    return NextResponse.json(post, { status: 201 })
+    // Schedule via QStash only for non-draft posts
+    if (!isDraft && data.scheduledAt) {
+      try {
+        const qstashId = await schedulePost(post.id, new Date(data.scheduledAt))
+        await db.post.update({
+          where: { id: post.id },
+          data: { qstashId },
+        })
+      } catch (error) {
+        console.error("QStash scheduling failed:", error)
+      }
+    }
+
+    const postWithContents = await db.post.findUnique({
+      where: { id: post.id },
+      include: { results: true, platformContents: true, tags: true },
+    })
+
+    return NextResponse.json(postWithContents, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

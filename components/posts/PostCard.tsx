@@ -28,8 +28,9 @@ type PostCardProps = {
 }
 
 export function PostCard({ post, selected, onSelect, onDelete, onPermanentDelete }: PostCardProps) {
-  const scheduledDate = new Date(post.scheduledAt)
+  const scheduledDate = post.scheduledAt ? new Date(post.scheduledAt) : null
   const isPending = post.status === "PENDING"
+  const isDraft = post.status === "DRAFT"
   const showResults = post.status !== "PENDING" && post.results.length > 0
 
   return (
@@ -50,6 +51,25 @@ export function PostCard({ post, selected, onSelect, onDelete, onPermanentDelete
             {post.content}
           </p>
         </div>
+
+        {/* Tags */}
+        {post.tags && post.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {post.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-[10px] font-medium"
+                style={{ borderColor: tag.color }}
+              >
+                <span
+                  className="size-1.5 rounded-full"
+                  style={{ backgroundColor: tag.color }}
+                />
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Platform badges */}
         <div className="flex flex-wrap gap-1.5">
@@ -75,9 +95,15 @@ export function PostCard({ post, selected, onSelect, onDelete, onPermanentDelete
         <div className="flex items-center justify-between gap-2 pt-1">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Clock className="size-3.5" />
-            <span>{format(scheduledDate, "MMM d 'at' h:mm a")}</span>
-            <span className="text-muted-foreground/50">·</span>
-            <span>{formatDistanceToNow(scheduledDate, { addSuffix: true })}</span>
+            {scheduledDate ? (
+              <>
+                <span>{format(scheduledDate, "MMM d 'at' h:mm a")}</span>
+                <span className="text-muted-foreground/50">·</span>
+                <span>{formatDistanceToNow(scheduledDate, { addSuffix: true })}</span>
+              </>
+            ) : (
+              <span>No schedule</span>
+            )}
             {post.aiGenerated && (
               <>
                 <span className="text-muted-foreground/50">·</span>
@@ -103,13 +129,13 @@ export function PostCard({ post, selected, onSelect, onDelete, onPermanentDelete
                     Edit
                   </Link>
                 </DropdownMenuItem>
-                {isPending && (
+                {(isPending || isDraft) && (
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() => onDelete(post.id)}
                   >
                     <Trash2 className="mr-2 size-4" />
-                    Cancel Post
+                    {isDraft ? "Delete Draft" : "Cancel Post"}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   FileText,
   Upload,
+  Image as ImageIcon,
   Settings,
   Link2,
   LogOut,
@@ -41,6 +42,7 @@ import {
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Posts", href: "/posts", icon: FileText },
+  { title: "Media", href: "/media", icon: ImageIcon },
   { title: "Import", href: "/import", icon: Upload },
 ]
 

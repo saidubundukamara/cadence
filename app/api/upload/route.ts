@@ -10,8 +10,9 @@ export async function POST() {
   const timestamp = Math.round(new Date().getTime() / 1000)
   const apiSecret = process.env.CLOUDINARY_API_SECRET!
 
-  // Dynamic import for cloudinary signing
   const { createHash } = await import("crypto")
+
+  // Sign for both image and video uploads (same signature works for folder+timestamp)
   const paramsToSign = `folder=cadence&timestamp=${timestamp}`
   const signature = createHash("sha1")
     .update(paramsToSign + apiSecret)

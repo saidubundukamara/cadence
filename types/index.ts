@@ -7,7 +7,7 @@ export type PostWithResults = {
   userId: string
   content: string
   platforms: Platform[]
-  scheduledAt: Date
+  scheduledAt: Date | null
   status: PostStatus
   mediaUrls: string[]
   aiGenerated: boolean
@@ -24,6 +24,13 @@ export type PostWithResults = {
     error: string | null
     publishedAt: Date | null
   }[]
+  platformContents?: {
+    id: string
+    postId: string
+    platform: Platform
+    content: string
+  }[]
+  tags?: PostTag[]
 }
 
 export type SocialAccountInfo = {
@@ -41,10 +48,16 @@ export type CalendarPost = {
   id: string
   content: string
   platforms: Platform[]
-  scheduledAt: string
+  scheduledAt: string | null
   status: PostStatus
   mediaUrls: string[]
   aiGenerated: boolean
+}
+
+export type PostTag = {
+  id: string
+  name: string
+  color: string
 }
 
 export type PostStats = {
