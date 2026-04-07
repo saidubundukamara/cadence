@@ -13,6 +13,8 @@ import {
   LogOut,
   Plus,
   AudioWaveform,
+  Bookmark,
+  Sparkles,
 } from "lucide-react"
 import {
   Sidebar,
@@ -42,6 +44,8 @@ import {
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Posts", href: "/posts", icon: FileText },
+  { title: "Inspiration", href: "/inspiration", icon: Bookmark },
+  { title: "Suggestions", href: "/suggestions", icon: Sparkles },
   { title: "Media", href: "/media", icon: ImageIcon },
   { title: "Import", href: "/import", icon: Upload },
 ]
