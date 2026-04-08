@@ -19,5 +19,7 @@
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "registries": {}
+  "registries": {
+    "@reactbits": "https://reactbits.dev/r/{name}.json"
+  }
 }
