@@ -15,6 +15,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errorIsNetwork, setErrorIsNetwork] = useState(false)
   const [loading, setLoading] = useState(false)
   const emailRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
@@ -30,9 +31,10 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     })
   }, [])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault?.()
     setError(null)
+    setErrorIsNetwork(false)
     setLoading(true)
     const cleanEmail = email.trim().toLowerCase()
     try {
@@ -57,7 +59,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       chrome.runtime.sendMessage({ type: "AUTH_SUCCESS" })
       onSuccess()
     } catch {
-      setError("Couldn't reach Cadence. Check your connection and try again.")
+      setError("Couldn't reach Cadence. Check your connection.")
+      setErrorIsNetwork(true)
     } finally {
       setLoading(false)
     }
@@ -135,7 +138,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           variants={rise}
           className="mb-10 text-[14px] leading-relaxed text-[var(--color-muted-foreground)]"
         >
-          Sign in to save inspiration from anywhere on the web.
+          Sign in to start saving.
         </motion.p>
 
         {/* Form */}
@@ -149,7 +152,16 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
               aria-live="polite"
               className="rounded-xl border border-[color-mix(in_oklch,var(--color-destructive)_30%,transparent)] bg-[color-mix(in_oklch,var(--color-destructive)_6%,transparent)] px-3.5 py-2.5 text-[13px] leading-snug text-[var(--color-destructive)]"
             >
-              {error}
+              <div>{error}</div>
+              {errorIsNetwork && (
+                <button
+                  type="button"
+                  onClick={() => handleSubmit()}
+                  className="mt-1.5 text-[12px] font-semibold underline underline-offset-2"
+                >
+                  Try again
+                </button>
+              )}
             </motion.div>
           )}
 
