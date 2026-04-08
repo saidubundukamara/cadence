@@ -74,11 +74,15 @@ chrome.runtime.onMessage.addListener(
 async function handleSaveInspiration(payload: SaveInspirationPayload): Promise<Inspiration> {
   const inspiration = await saveInspiration(payload)
 
-  // Prepend to recent inspirations cache, keep last 5
+  // Prepend to recent inspirations cache, keep last N
   const stored = await chrome.storage.local.get(RECENT_KEY)
   const recent: Inspiration[] = (stored[RECENT_KEY] as Inspiration[]) ?? []
   const updated = [inspiration, ...recent].slice(0, RECENT_MAX)
   await chrome.storage.local.set({ [RECENT_KEY]: updated })
+
+  // Refresh boards cache so popup shows the updated board counts
+  // and the save lands against the correct (up-to-date) board record.
+  await refreshBoardsCache()
 
   return inspiration
 }
