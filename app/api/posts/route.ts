@@ -11,7 +11,7 @@ const createPostSchema = z.object({
   scheduledAt: z.string().nullable().optional(),
   mediaUrls: z.array(z.string().url()).optional().default([]),
   aiGenerated: z.boolean().optional().default(false),
-  youtubeVideoId: z.string().optional(),
+  youtubeVideoId: z.string().nullable().optional(),
   isDraft: z.boolean().optional().default(false),
   tagIds: z.array(z.string()).optional().default([]),
   platformContents: z
