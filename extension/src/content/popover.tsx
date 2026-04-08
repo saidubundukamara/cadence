@@ -70,7 +70,7 @@ export function Popover({
               justifyContent: "space-between",
               width: "100%",
               padding: "8px 12px",
-              background: board.id === selectedBoardId ? "#f0f0ff" : "transparent",
+              background: board.id === selectedBoardId ? "#e8faf0" : "transparent",
               border: "none",
               cursor: "pointer",
               textAlign: "left",
@@ -112,8 +112,9 @@ export function Popover({
               disabled={creating}
               style={{
                 padding: "4px 8px",
-                background: "#6366f1",
-                color: "#fff",
+                background: "#9ee6c4",
+                color: "#0a0a0a",
+                fontWeight: 600,
                 border: "none",
                 borderRadius: 4,
                 fontSize: 12,
