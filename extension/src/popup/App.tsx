@@ -21,6 +21,21 @@ export function App() {
       const onboarded = await isOnboarded()
       setStage(onboarded ? "authed" : "onboarding")
     })()
+
+    // If apiFetch wipes the auth record after a 401, route back to login
+    // immediately instead of leaving the popup stuck on an empty Home.
+    const onChanged = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      area: chrome.storage.AreaName
+    ) => {
+      if (area !== "local") return
+      if ("cadence_auth" in changes && !changes.cadence_auth.newValue) {
+        setStage("unauthed")
+        setView({ kind: "home" })
+      }
+    }
+    chrome.storage.onChanged.addListener(onChanged)
+    return () => chrome.storage.onChanged.removeListener(onChanged)
   }, [])
 
   if (stage === "loading") {

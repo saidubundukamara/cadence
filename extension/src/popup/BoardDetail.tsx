@@ -19,6 +19,7 @@ import {
   moveInspiration,
   updateBoard,
 } from "@/lib/api"
+import { readUserScoped, writeUserScoped } from "@/lib/auth"
 import type { Board, Inspiration } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "./components/EmptyState"
@@ -55,8 +56,8 @@ export function BoardDetail({ boardId, onBack }: BoardDetailProps) {
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    chrome.storage.local.get([BOARDS_CACHE_KEY]).then((r) => {
-      const cached = (r[BOARDS_CACHE_KEY] as Board[]) ?? []
+    readUserScoped<Board[]>(BOARDS_CACHE_KEY).then((cached) => {
+      if (!cached) return
       setBoards(cached)
       const found = cached.find((b) => b.id === boardId)
       if (found) {
@@ -67,7 +68,7 @@ export function BoardDetail({ boardId, onBack }: BoardDetailProps) {
     getBoards()
       .then((bs) => {
         setBoards(bs)
-        chrome.storage.local.set({ [BOARDS_CACHE_KEY]: bs })
+        writeUserScoped(BOARDS_CACHE_KEY, bs)
         const found = bs.find((b) => b.id === boardId)
         if (found) {
           setBoard(found)
@@ -132,7 +133,7 @@ export function BoardDetail({ boardId, onBack }: BoardDetailProps) {
       setRenaming(false)
       const refreshed = await getBoards()
       setBoards(refreshed)
-      chrome.storage.local.set({ [BOARDS_CACHE_KEY]: refreshed })
+      writeUserScoped(BOARDS_CACHE_KEY, refreshed)
     } catch (e) {
       setError((e as Error).message)
     }
@@ -142,7 +143,7 @@ export function BoardDetail({ boardId, onBack }: BoardDetailProps) {
     try {
       await deleteBoard(boardId)
       const refreshed = await getBoards().catch(() => [])
-      chrome.storage.local.set({ [BOARDS_CACHE_KEY]: refreshed })
+      writeUserScoped(BOARDS_CACHE_KEY, refreshed)
       onBack()
     } catch (e) {
       setError((e as Error).message)
