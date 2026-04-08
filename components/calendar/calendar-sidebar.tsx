@@ -136,14 +136,14 @@ export function CalendarSidebar() {
                   {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-1 flex-col overflow-hidden">
+              <span className="flex flex-1 flex-col overflow-hidden">
                 <span className="truncate font-medium">
                   {user?.name ?? "User"}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {user?.email ?? ""}
                 </span>
-              </div>
+              </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
