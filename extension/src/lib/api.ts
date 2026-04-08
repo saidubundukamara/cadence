@@ -3,7 +3,7 @@ import type { Board, Inspiration, SaveInspirationPayload } from "./types"
 
 async function getBaseUrl(): Promise<string> {
   const auth = await getAuth()
-  return auth?.cadenceUrl ?? "http://localhost:3000"
+  return auth?.cadenceUrl ?? import.meta.env.VITE_CADENCE_URL ?? "http://localhost:3000"
 }
 
 async function apiFetch<T>(

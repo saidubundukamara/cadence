@@ -5,10 +5,9 @@ interface LoginFormProps {
   onSuccess: () => void
 }
 
-const DEFAULT_URL = "https://app.cadence.so"
+const DEFAULT_URL = import.meta.env.VITE_CADENCE_URL as string
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
-  const [cadenceUrl, setCadenceUrl] = useState(DEFAULT_URL)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -20,7 +19,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setLoading(true)
 
     try {
-      const base = cadenceUrl.replace(/\/$/, "")
+      const base = DEFAULT_URL.replace(/\/$/, "")
       const res = await fetch(`${base}/api/auth/extension-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -59,17 +58,6 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       <h2 style={styles.title}>Sign in</h2>
 
       {error && <div style={styles.error}>{error}</div>}
-
-      <div style={styles.field}>
-        <label style={styles.label}>Cadence URL</label>
-        <input
-          type="url"
-          value={cadenceUrl}
-          onChange={(e) => setCadenceUrl(e.target.value)}
-          style={styles.input}
-          required
-        />
-      </div>
 
       <div style={styles.field}>
         <label style={styles.label}>Email</label>
