@@ -5,11 +5,14 @@ import { isOnboarded } from "@/lib/onboarding"
 import { LoginForm } from "./LoginForm"
 import { Home } from "./Home"
 import { Onboarding } from "./Onboarding"
+import { BoardDetail } from "./BoardDetail"
 
 type Stage = "loading" | "unauthed" | "onboarding" | "authed"
+type View = { kind: "home" } | { kind: "board"; boardId: string }
 
 export function App() {
   const [stage, setStage] = useState<Stage>("loading")
+  const [view, setView] = useState<View>({ kind: "home" })
 
   useEffect(() => {
     ;(async () => {
@@ -43,5 +46,19 @@ export function App() {
     return <Onboarding onDone={() => setStage("authed")} />
   }
 
-  return <Home onLogout={() => setStage("unauthed")} />
+  if (view.kind === "board") {
+    return (
+      <BoardDetail
+        boardId={view.boardId}
+        onBack={() => setView({ kind: "home" })}
+      />
+    )
+  }
+
+  return (
+    <Home
+      onLogout={() => setStage("unauthed")}
+      onOpenBoard={(boardId) => setView({ kind: "board", boardId })}
+    />
+  )
 }
