@@ -8,14 +8,15 @@ import {
   LogOut,
   Sparkles,
 } from "lucide-react"
-import { clearAuth, getAuth } from "@/lib/auth"
-import { getBoards } from "@/lib/api"
+import { clearAuth, getAuth, readUserScoped, writeUserScoped } from "@/lib/auth"
+import { createBoard, getBoards, listRecentInspirations } from "@/lib/api"
 import type { AuthState, Board, Inspiration } from "@/lib/types"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "./components/EmptyState"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Loader2, Plus } from "lucide-react"
 
 const BOARDS_CACHE_KEY = "cadence_boards_cache"
 const RECENT_KEY = "cadence_recent_inspirations"
@@ -42,23 +43,76 @@ export function Home({ onLogout, onOpenBoard }: HomeProps) {
   const [recent, setRecent] = useState<Inspiration[] | null>(null)
   const [boardsError, setBoardsError] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
+  const [newBoardName, setNewBoardName] = useState("")
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+
+  async function handleCreateBoard(e: React.FormEvent) {
+    e.preventDefault()
+    const name = newBoardName.trim()
+    if (!name) return
+    setCreating(true)
+    setCreateError(null)
+    try {
+      const board = await createBoard(name)
+      const next = boards ? [board, ...boards] : [board]
+      setBoards(next)
+      writeUserScoped(BOARDS_CACHE_KEY, next)
+      setNewBoardName("")
+      setShowCreate(false)
+    } catch (err) {
+      setCreateError((err as Error).message || "Couldn't create board.")
+    } finally {
+      setCreating(false)
+    }
+  }
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    getAuth().then(setAuth)
-    chrome.storage.local.get([BOARDS_CACHE_KEY, RECENT_KEY]).then((result) => {
-      setBoards((result[BOARDS_CACHE_KEY] as Board[]) ?? [])
-      setRecent((result[RECENT_KEY] as Inspiration[]) ?? [])
+    let cancelled = false
+    getAuth().then((a) => {
+      if (!cancelled) setAuth(a)
     })
+
+    // Read user-scoped cache; helper rejects entries that belong to a
+    // different user, so we won't briefly flash the previous user's data.
+    Promise.all([
+      readUserScoped<Board[]>(BOARDS_CACHE_KEY),
+      readUserScoped<Inspiration[]>(RECENT_KEY),
+    ]).then(([cachedBoards, cachedRecent]) => {
+      if (cancelled) return
+      if (cachedBoards) setBoards(cachedBoards)
+      if (cachedRecent) setRecent(cachedRecent)
+    })
+
     getBoards()
       .then((bs) => {
+        if (cancelled) return
         setBoards(bs)
         setBoardsError(null)
+        writeUserScoped(BOARDS_CACHE_KEY, bs)
       })
       .catch((e) => {
+        if (cancelled) return
         setBoards((prev) => prev ?? [])
         setBoardsError((e as Error).message || "Couldn't load your boards.")
       })
+
+    listRecentInspirations(5)
+      .then((items) => {
+        if (cancelled) return
+        setRecent(items)
+        writeUserScoped(RECENT_KEY, items)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setRecent((prev) => prev ?? [])
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
@@ -209,7 +263,34 @@ export function Home({ onLogout, onOpenBoard }: HomeProps) {
 
         {/* Boards */}
         <section className="px-6 pb-6">
-          <SectionTitle icon={<FolderHeart className="size-3" />} label="Your boards" />
+          <div className="mb-3 flex items-center justify-between">
+            <SectionTitle icon={<FolderHeart className="size-3" />} label="Your boards" />
+            <button
+              onClick={() => setShowCreate((v) => !v)}
+              className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-primary)]"
+            >
+              <Plus className="size-3" />
+              New
+            </button>
+          </div>
+          {showCreate && (
+            <form onSubmit={handleCreateBoard} className="mb-3 flex gap-2">
+              <Input
+                value={newBoardName}
+                onChange={(e) => setNewBoardName(e.target.value)}
+                placeholder="Board name"
+                disabled={creating}
+                autoFocus
+                className="h-8 text-xs"
+              />
+              <Button type="submit" size="sm" disabled={creating || !newBoardName.trim()} className="h-8 px-3 text-xs">
+                {creating ? <Loader2 className="size-3 animate-spin" /> : "Add"}
+              </Button>
+            </form>
+          )}
+          {createError && (
+            <div className="mb-2 text-[11px] text-[var(--color-destructive)]">{createError}</div>
+          )}
           {boardsError && (
             <div className="mb-2 rounded-md border border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/5 px-3 py-2 text-[11px] text-[var(--color-destructive)]">
               {boardsError}
