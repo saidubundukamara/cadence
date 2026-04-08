@@ -1,5 +1,13 @@
 import type { ExtractedPost } from "../../lib/types"
 
+export const LINKEDIN_POST_SELECTORS = [
+  ".feed-shared-update-v2",
+  "[data-urn*='activity']",
+  ".occludable-update",
+]
+
+export const LINKEDIN_POST_SELECTOR = LINKEDIN_POST_SELECTORS[0]
+
 export function extractLinkedInPost(el: Element): ExtractedPost | null {
   const postUrl = getPostUrl(el)
   if (!postUrl) return null
@@ -7,11 +15,13 @@ export function extractLinkedInPost(el: Element): ExtractedPost | null {
   const content =
     el.querySelector(".feed-shared-update-v2__description-wrapper")?.textContent?.trim() ??
     el.querySelector(".update-components-text")?.textContent?.trim() ??
+    el.querySelector(".feed-shared-text-view span[dir]")?.textContent?.trim() ??
     undefined
 
   const authorName =
     el.querySelector(".update-components-actor__name span[aria-hidden='true']")?.textContent?.trim() ??
     el.querySelector(".feed-shared-actor__name")?.textContent?.trim() ??
+    el.querySelector(".update-components-actor__name")?.textContent?.trim() ??
     undefined
 
   const authorHandle = undefined // LinkedIn doesn't always expose handles
@@ -38,7 +48,6 @@ export function extractLinkedInPost(el: Element): ExtractedPost | null {
 }
 
 function getPostUrl(el: Element): string | null {
-  // Timestamp link is the most reliable permalink
   const timeLink = el.querySelector(
     "a.update-components-actor__sub-description-link, a[href*='/feed/update/']"
   ) as HTMLAnchorElement | null
@@ -49,5 +58,3 @@ function getPostUrl(el: Element): string | null {
   ) as HTMLAnchorElement | null
   return ugcLink?.href ?? null
 }
-
-export const LINKEDIN_POST_SELECTOR = ".feed-shared-update-v2"
