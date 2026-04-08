@@ -14,6 +14,8 @@ import type { AuthState, Board, Inspiration } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "./components/EmptyState"
+import { ChevronRight } from "lucide-react"
 
 const BOARDS_CACHE_KEY = "cadence_boards_cache"
 const RECENT_KEY = "cadence_recent_inspirations"
@@ -31,9 +33,10 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 interface HomeProps {
   onLogout: () => void
+  onOpenBoard: (boardId: string) => void
 }
 
-export function Home({ onLogout }: HomeProps) {
+export function Home({ onLogout, onOpenBoard }: HomeProps) {
   const [auth, setAuth] = useState<AuthState | null>(null)
   const [boards, setBoards] = useState<Board[] | null>(null)
   const [recent, setRecent] = useState<Inspiration[] | null>(null)
@@ -210,18 +213,80 @@ export function Home({ onLogout }: HomeProps) {
               hint="Boards appear here as soon as you save something."
             />
           ) : (
-            <div className="flex flex-col gap-1">
-              {boards.slice(0, 6).map((board) => (
-                <div
-                  key={board.id}
-                  className="flex items-center justify-between rounded-md px-2.5 py-2 text-xs transition-colors hover:bg-[var(--color-muted)]"
-                >
-                  <span className="truncate font-medium">{board.name}</span>
-                  <span className="text-[10px] font-medium text-[var(--color-muted-foreground)]">
-                    {board._count?.inspirations ?? 0}
-                  </span>
-                </div>
-              ))}
+            <div className="grid grid-cols-3 gap-2">
+              {boards.slice(0, 9).map((board, i) => {
+                const count = board._count?.inspirations ?? 0
+                return (
+                  <motion.button
+                    key={board.id}
+                    onClick={() => onOpenBoard(board.id)}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22, delay: i * 0.03 }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group relative flex aspect-square flex-col justify-between overflow-hidden rounded-xl border border-[var(--color-border)] bg-white p-2.5 text-left transition-shadow hover:border-[color-mix(in_oklch,var(--color-primary)_45%,var(--color-border))] hover:shadow-md"
+                  >
+                    {board.coverImage ? (
+                      <>
+                        <img
+                          src={board.coverImage}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                      </>
+                    ) : (
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, color-mix(in oklch, var(--color-mint) 55%, white) 0%, color-mix(in oklch, var(--color-mint) 25%, white) 100%)",
+                        }}
+                      />
+                    )}
+
+                    <div className="relative flex items-start justify-between">
+                      <div
+                        className={`flex size-6 items-center justify-center rounded-md backdrop-blur-sm ${
+                          board.coverImage ? "bg-white/25" : "bg-white/70"
+                        }`}
+                      >
+                        <FolderHeart
+                          className={`size-3 ${
+                            board.coverImage ? "text-white" : "text-[var(--color-foreground)]"
+                          }`}
+                          strokeWidth={2.25}
+                        />
+                      </div>
+                      <ChevronRight
+                        className={`size-3.5 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100 ${
+                          board.coverImage ? "text-white" : "text-[var(--color-foreground)]"
+                        }`}
+                      />
+                    </div>
+
+                    <div className="relative">
+                      <div
+                        className={`truncate text-[13px] font-semibold tracking-[-0.01em] ${
+                          board.coverImage ? "text-white" : "text-[var(--color-foreground)]"
+                        }`}
+                      >
+                        {board.name}
+                      </div>
+                      <div
+                        className={`mt-0.5 text-[10px] font-medium ${
+                          board.coverImage
+                            ? "text-white/80"
+                            : "text-[var(--color-foreground)]/65"
+                        }`}
+                      >
+                        {count} {count === 1 ? "item" : "items"}
+                      </div>
+                    </div>
+                  </motion.button>
+                )
+              })}
             </div>
           )}
         </section>
@@ -250,20 +315,3 @@ function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string })
   )
 }
 
-function EmptyState({
-  icon,
-  title,
-  hint,
-}: {
-  icon: React.ReactNode
-  title: string
-  hint: string
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1.5 rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-muted)]/40 px-4 py-5 text-center">
-      <div className="text-[var(--color-muted-foreground)]">{icon}</div>
-      <div className="text-xs font-semibold">{title}</div>
-      <div className="text-[11px] text-[var(--color-muted-foreground)]">{hint}</div>
-    </div>
-  )
-}
