@@ -4,7 +4,7 @@ import { Overlay } from "./overlay"
 import { extractTweet, TWEET_SELECTOR } from "./platforms/twitter"
 import { extractLinkedInPost, LINKEDIN_POST_SELECTORS } from "./platforms/linkedin"
 import { extractRedditPost, REDDIT_POST_SELECTOR } from "./platforms/reddit"
-import { isAuthenticated } from "../lib/auth"
+import { isAuthenticated, readUserScoped, writeUserScoped } from "../lib/auth"
 import type { Board, ExtractedPost } from "../lib/types"
 
 const LAST_BOARD_KEY = "cadence_last_board_id"
@@ -94,6 +94,7 @@ async function attachOverlay(postEl: Element) {
 
   let overlayHost: HTMLElement | null = null
   let removeTimeout: ReturnType<typeof setTimeout> | null = null
+  let popoverOpen = false
 
   function removeOverlay() {
     if (overlayHost) {
@@ -123,8 +124,7 @@ async function attachOverlay(postEl: Element) {
     if (!post) return
 
     const boards = await getBoards()
-    const stored = await chrome.storage.local.get(LAST_BOARD_KEY)
-    const lastBoardId = (stored[LAST_BOARD_KEY] as string) ?? null
+    const lastBoardId = await readUserScoped<string>(LAST_BOARD_KEY)
 
     // Mount in document.body to avoid X.com/LinkedIn overflow:hidden clipping
     // and React reconciliation removing our injected child nodes
@@ -149,11 +149,15 @@ async function attachOverlay(postEl: Element) {
         boards,
         lastBoardId,
         onSave: async (boardId: string) => {
-          await chrome.storage.local.set({ [LAST_BOARD_KEY]: boardId })
+          await writeUserScoped(LAST_BOARD_KEY, boardId)
           await saveInspiration(post, boardId)
         },
         onNewBoard: createBoard,
         onClose: removeOverlay,
+        onPopoverChange: (open: boolean) => {
+          popoverOpen = open
+          if (open && removeTimeout) clearTimeout(removeTimeout)
+        },
       })
     )
 
@@ -161,6 +165,7 @@ async function attachOverlay(postEl: Element) {
       if (removeTimeout) clearTimeout(removeTimeout)
     })
     overlayHost.addEventListener("mouseleave", (e) => {
+      if (popoverOpen) return
       const related = (e as MouseEvent).relatedTarget as Node | null
       if (related && postEl.contains(related)) return
       removeTimeout = setTimeout(removeOverlay, 300)
@@ -168,6 +173,7 @@ async function attachOverlay(postEl: Element) {
   })
 
   postEl.addEventListener("mouseleave", (e) => {
+    if (popoverOpen) return
     const related = (e as MouseEvent).relatedTarget as Node | null
     if (related && overlayHost && overlayHost.contains(related)) return
     removeTimeout = setTimeout(removeOverlay, 300)

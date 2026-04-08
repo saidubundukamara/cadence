@@ -9,6 +9,7 @@ interface OverlayProps {
   onSave: (boardId: string) => Promise<void>
   onNewBoard: (name: string) => Promise<Board>
   onClose: () => void
+  onPopoverChange?: (open: boolean) => void
 }
 
 export function Overlay({
@@ -18,12 +19,17 @@ export function Overlay({
   onSave,
   onNewBoard,
   onClose,
+  onPopoverChange,
 }: OverlayProps) {
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const [showPopover, setShowPopover] = useState(false)
   const mountedRef = useRef(true)
 
   useEffect(() => () => { mountedRef.current = false }, [])
+
+  useEffect(() => {
+    onPopoverChange?.(showPopover)
+  }, [showPopover, onPopoverChange])
 
   const defaultBoardId =
     lastBoardId ??

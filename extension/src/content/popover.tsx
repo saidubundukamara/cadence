@@ -19,13 +19,17 @@ export function Popover({
   const [newBoardName, setNewBoardName] = useState("")
   const [showNewInput, setShowNewInput] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleCreate() {
     if (!newBoardName.trim()) return
     setCreating(true)
+    setError(null)
     try {
       const board = await onNewBoard(newBoardName.trim())
       onSelect(board.id)
+    } catch (e) {
+      setError((e as Error).message || "Couldn't create board")
     } finally {
       setCreating(false)
     }
@@ -141,6 +145,11 @@ export function Popover({
           >
             + New board
           </button>
+        )}
+        {error && (
+          <div style={{ color: "#dc2626", fontSize: 11, marginTop: 6, paddingLeft: 2 }}>
+            {error}
+          </div>
         )}
       </div>
     </div>
