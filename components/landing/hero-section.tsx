@@ -152,7 +152,7 @@ export function HeroSection() {
               className="mb-6 gap-1.5 rounded-full border-accent-mint/40 bg-accent-mint-bg px-3 py-1.5 text-foreground/70"
             >
               <Sparkles className="size-3.5 text-accent-mint-dark" />
-              AI-Powered Scheduling
+              Made with AI
             </Badge>
 
             {/* Headline */}
@@ -180,9 +180,8 @@ export function HeroSection() {
 
             {/* Subtitle */}
             <p className="mt-6 text-lg leading-relaxed text-muted-foreground md:text-xl">
-              Write once, publish everywhere. Cadence uses AI to craft
-              platform-perfect posts, schedule them at optimal times, and grow
-              your audience.
+              See a post you like? Save it. Need to write one? Cadence helps.
+              Then it posts for you on all six big sites. That&apos;s it.
             </p>
 
             {/* Hand-drawn arrow pointing from subtitle toward CTAs */}

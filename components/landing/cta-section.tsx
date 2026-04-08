@@ -120,8 +120,8 @@ export function CtaSection() {
                 </h2>
 
                 <p className="text-base leading-relaxed text-muted-foreground md:text-lg">
-                  Join creators and teams who use Cadence to save hours every week
-                  on social media management. Start for free, no credit card required.
+                  Cadence saves you hours every week. It&apos;s free to try. No
+                  card needed.
                 </p>
 
                 <Button
