@@ -47,13 +47,25 @@ export default function DashboardPage() {
   }, [currentWeekStart, viewMode, fetchPosts])
 
   async function handleReschedule(postId: string, newDate: Date) {
-    const res = await fetch(`/api/posts/${postId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scheduledAt: newDate.toISOString() }),
+    const iso = newDate.toISOString()
+    let previous: CalendarPost[] = []
+    setPosts((curr) => {
+      previous = curr
+      return curr.map((p) =>
+        p.id === postId ? { ...p, scheduledAt: iso } : p
+      )
     })
-    if (res.ok) {
-      fetchPosts()
+    try {
+      const res = await fetch(`/api/posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduledAt: iso }),
+      })
+      if (!res.ok) {
+        setPosts(previous)
+      }
+    } catch {
+      setPosts(previous)
     }
   }
 
