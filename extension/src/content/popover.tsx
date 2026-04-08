@@ -45,6 +45,7 @@ export function Popover({
         overflow: "hidden",
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         fontSize: 13,
+        pointerEvents: "auto",
       }}
     >
       <div
