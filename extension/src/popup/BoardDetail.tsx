@@ -51,6 +51,7 @@ export function BoardDetail({ boardId, onBack }: BoardDetailProps) {
   const [renameValue, setRenameValue] = useState("")
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
+  const [confirmingDeleteItem, setConfirmingDeleteItem] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -262,8 +263,8 @@ export function BoardDetail({ boardId, onBack }: BoardDetailProps) {
         ) : items.length === 0 ? (
           <EmptyState
             icon={<Inbox className="size-5" />}
-            title="Board is empty"
-            hint="Save a post to this board to see it here."
+            title="Nothing here yet"
+            hint="Saves to this board will show up here."
           />
         ) : (
           <div className="flex flex-col gap-4">
@@ -282,7 +283,15 @@ export function BoardDetail({ boardId, onBack }: BoardDetailProps) {
                       setMoveOpenFor((cur) => (cur === insp.id ? null : insp.id))
                     }
                     onMove={(targetId) => handleMoveItem(insp.id, targetId)}
-                    onDelete={() => handleDeleteItem(insp.id)}
+                    confirmingDelete={confirmingDeleteItem === insp.id}
+                    onDelete={() => {
+                      if (confirmingDeleteItem === insp.id) {
+                        setConfirmingDeleteItem(null)
+                        handleDeleteItem(insp.id)
+                      } else {
+                        setConfirmingDeleteItem(insp.id)
+                      }
+                    }}
                   />
                 ))}
               </div>
@@ -333,9 +342,10 @@ interface ItemRowProps {
   onToggleMove: () => void
   onMove: (boardId: string) => void
   onDelete: () => void
+  confirmingDelete: boolean
 }
 
-function ItemRow({ item, otherBoards, moveOpen, onToggleMove, onMove, onDelete }: ItemRowProps) {
+function ItemRow({ item, otherBoards, moveOpen, onToggleMove, onMove, onDelete, confirmingDelete }: ItemRowProps) {
   const color = PLATFORM_COLORS[item.sourcePlatform]
   const [actionsOpen, setActionsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -413,13 +423,13 @@ function ItemRow({ item, otherBoards, moveOpen, onToggleMove, onMove, onDelete }
               </button>
               <button
                 onClick={() => {
-                  setActionsOpen(false)
+                  if (confirmingDelete) setActionsOpen(false)
                   onDelete()
                 }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[var(--color-destructive)] hover:bg-[var(--color-muted)]"
               >
                 <Trash2 className="size-3.5" />
-                Delete
+                {confirmingDelete ? "Tap again to confirm" : "Delete"}
               </button>
             </motion.div>
           )}
