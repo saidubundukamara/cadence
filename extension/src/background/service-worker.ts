@@ -1,5 +1,5 @@
-import { getBoards, saveInspiration } from "../lib/api"
-import { isAuthenticated } from "../lib/auth"
+import { createBoard, getBoards, saveInspiration } from "../lib/api"
+import { isAuthenticated, readUserScoped, writeUserScoped } from "../lib/auth"
 import type { Board, Inspiration, SaveInspirationPayload } from "../lib/types"
 
 const BOARDS_CACHE_KEY = "cadence_boards_cache"
@@ -9,7 +9,7 @@ const RECENT_MAX = 5
 async function refreshBoardsCache(): Promise<void> {
   try {
     const boards = await getBoards()
-    await chrome.storage.local.set({ [BOARDS_CACHE_KEY]: boards })
+    await writeUserScoped(BOARDS_CACHE_KEY, boards)
   } catch {
     // Silently fail — cache stays stale
   }
@@ -43,18 +43,15 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === "GET_BOARDS") {
-      chrome.storage.local
-        .get(BOARDS_CACHE_KEY)
-        .then((result) => {
-          const boards = (result[BOARDS_CACHE_KEY] as Board[]) ?? []
-          sendResponse({ boards })
+      readUserScoped<Board[]>(BOARDS_CACHE_KEY)
+        .then((boards) => {
+          sendResponse({ boards: boards ?? [] })
         })
       return true
     }
 
     if (message.type === "CREATE_BOARD") {
-      import("../lib/api")
-        .then(({ createBoard }) => createBoard((message.payload as { name: string }).name))
+      createBoard((message.payload as { name: string }).name)
         .then(async (board) => {
           await refreshBoardsCache()
           sendResponse({ success: true, board })
@@ -74,11 +71,14 @@ chrome.runtime.onMessage.addListener(
 async function handleSaveInspiration(payload: SaveInspirationPayload): Promise<Inspiration> {
   const inspiration = await saveInspiration(payload)
 
-  // Prepend to recent inspirations cache, keep last 5
-  const stored = await chrome.storage.local.get(RECENT_KEY)
-  const recent: Inspiration[] = (stored[RECENT_KEY] as Inspiration[]) ?? []
+  // Prepend to recent inspirations cache, keep last N
+  const recent = (await readUserScoped<Inspiration[]>(RECENT_KEY)) ?? []
   const updated = [inspiration, ...recent].slice(0, RECENT_MAX)
-  await chrome.storage.local.set({ [RECENT_KEY]: updated })
+  await writeUserScoped(RECENT_KEY, updated)
+
+  // Refresh boards cache so popup shows the updated board counts
+  // and the save lands against the correct (up-to-date) board record.
+  await refreshBoardsCache()
 
   return inspiration
 }

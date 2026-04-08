@@ -3,18 +3,10 @@
 import { isSameDay, isSameMonth, isToday, format } from "date-fns"
 import { useCalendarStore } from "@/store/calendar-store"
 import { cn } from "@/lib/utils"
-import { platformConfig } from "@/lib/platform-config"
+import { PostCard } from "./post-card"
 import type { CalendarPost } from "@/types"
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-const statusDotColor: Record<string, string> = {
-  DRAFT: "bg-gray-400",
-  PENDING: "bg-yellow-500",
-  PUBLISHED: "bg-green-500",
-  FAILED: "bg-red-500",
-  CANCELLED: "bg-muted-foreground/30",
-}
 
 interface CalendarMonthViewProps {
   posts: CalendarPost[]
@@ -90,31 +82,12 @@ export function CalendarMonthView({ posts }: CalendarMonthViewProps) {
                   {/* Post items (max 3 visible) */}
                   <div className="space-y-0.5">
                     {dayPosts.slice(0, 3).map((post) => (
-                      <button
+                      <PostCard
                         key={post.id}
+                        post={post}
+                        variant="tiny"
                         onClick={() => selectPost(post.id)}
-                        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted"
-                      >
-                        <span
-                          className={cn(
-                            "size-1.5 shrink-0 rounded-full",
-                            statusDotColor[post.status]
-                          )}
-                        />
-                        <span className="flex-1 truncate text-[10px]">
-                          {post.content}
-                        </span>
-                        {post.platforms.slice(0, 2).map((p) => {
-                          const config = platformConfig[p]
-                          const Icon = config.icon
-                          return (
-                            <Icon
-                              key={p}
-                              className={cn("size-2.5 shrink-0", config.color)}
-                            />
-                          )
-                        })}
-                      </button>
+                      />
                     ))}
                   </div>
                 </div>

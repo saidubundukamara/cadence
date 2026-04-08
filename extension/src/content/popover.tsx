@@ -19,13 +19,17 @@ export function Popover({
   const [newBoardName, setNewBoardName] = useState("")
   const [showNewInput, setShowNewInput] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleCreate() {
     if (!newBoardName.trim()) return
     setCreating(true)
+    setError(null)
     try {
       const board = await onNewBoard(newBoardName.trim())
       onSelect(board.id)
+    } catch (e) {
+      setError((e as Error).message || "Couldn't create board")
     } finally {
       setCreating(false)
     }
@@ -70,7 +74,7 @@ export function Popover({
               justifyContent: "space-between",
               width: "100%",
               padding: "8px 12px",
-              background: board.id === selectedBoardId ? "#f0f0ff" : "transparent",
+              background: board.id === selectedBoardId ? "#e8faf0" : "transparent",
               border: "none",
               cursor: "pointer",
               textAlign: "left",
@@ -112,8 +116,9 @@ export function Popover({
               disabled={creating}
               style={{
                 padding: "4px 8px",
-                background: "#6366f1",
-                color: "#fff",
+                background: "#9ee6c4",
+                color: "#0a0a0a",
+                fontWeight: 600,
                 border: "none",
                 borderRadius: 4,
                 fontSize: 12,
@@ -140,6 +145,11 @@ export function Popover({
           >
             + New board
           </button>
+        )}
+        {error && (
+          <div style={{ color: "#dc2626", fontSize: 11, marginTop: 6, paddingLeft: 2 }}>
+            {error}
+          </div>
         )}
       </div>
     </div>

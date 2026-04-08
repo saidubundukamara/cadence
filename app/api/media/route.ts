@@ -5,6 +5,7 @@ import { z } from "zod"
 
 const createMediaSchema = z.object({
   url: z.string().url(),
+  publicId: z.string().optional(),
   type: z.enum(["IMAGE", "VIDEO"]).default("IMAGE"),
   filename: z.string().optional(),
   size: z.number().optional(),
@@ -20,6 +21,8 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const type = searchParams.get("type")
+  const q = searchParams.get("q")
+  const sort = searchParams.get("sort") || "newest"
   const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100)
   const offset = parseInt(searchParams.get("offset") || "0")
 
@@ -27,13 +30,24 @@ export async function GET(req: NextRequest) {
   if (type && type !== "all") {
     where.type = type.toUpperCase()
   }
+  if (q) {
+    where.filename = { contains: q, mode: "insensitive" }
+  }
+
+  const orderBy: Record<string, "asc" | "desc"> =
+    sort === "oldest"
+      ? { createdAt: "asc" }
+      : sort === "largest"
+        ? { size: "desc" }
+        : { createdAt: "desc" }
 
   const [media, total] = await Promise.all([
     db.media.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       take: limit,
       skip: offset,
+      include: { _count: { select: { posts: true } } },
     }),
     db.media.count({ where }),
   ])
@@ -55,6 +69,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId: session.user.id,
         url: data.url,
+        publicId: data.publicId,
         type: data.type,
         filename: data.filename,
         size: data.size,

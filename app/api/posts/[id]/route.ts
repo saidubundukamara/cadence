@@ -106,6 +106,13 @@ export async function PATCH(
       await cancelPost(post.qstashId)
     }
 
+    const mediaConnect = data.mediaUrls
+      ? await db.media.findMany({
+          where: { userId: session.user.id, url: { in: data.mediaUrls } },
+          select: { id: true },
+        })
+      : null
+
     const updated = await db.post.update({
       where: { id },
       data: {
@@ -119,6 +126,9 @@ export async function PATCH(
         status: isDraft ? "DRAFT" : "PENDING",
         ...(data.tagIds && {
           tags: { set: data.tagIds.map((tagId) => ({ id: tagId })) },
+        }),
+        ...(mediaConnect && {
+          media: { set: mediaConnect.map((m) => ({ id: m.id })) },
         }),
       },
     })

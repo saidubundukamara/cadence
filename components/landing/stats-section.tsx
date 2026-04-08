@@ -167,21 +167,21 @@ function ScatteredDots() {
 const stats = [
   {
     metric: "10x Faster",
-    label: "Content Creation",
-    description: "AI writes and adapts your posts in seconds, not hours.",
+    label: "Writing posts",
+    description: "Write your post once. AI makes it fit each site for you.",
     icon: LightningIcon,
   },
   {
-    metric: "3 Platforms",
-    label: "One Dashboard",
-    description: "Manage Twitter, LinkedIn, and Facebook from a single view.",
+    metric: "6 Sites",
+    label: "One place",
+    description: "X, LinkedIn, Facebook, Instagram, TikTok, and Pinterest. All from here.",
     highlighted: true,
     icon: ConnectedNodesIcon,
   },
   {
     metric: "24/7",
-    label: "Auto Publishing",
-    description: "Schedule posts ahead and let Cadence handle the rest.",
+    label: "Always on",
+    description: "Pick a day and time. Cadence posts it for you, even while you sleep.",
     icon: ClockSunMoonIcon,
   },
 ]
@@ -201,7 +201,7 @@ export function StatsSection() {
             <span className="italic text-accent-mint-dark">Cadence</span>
           </h2>
           <p className="mt-3 text-base text-muted-foreground">
-            Real results from real teams shipping content every day.
+            Real people. Real posts. Every day.
           </p>
 
           {/* Decorative squiggle under heading */}

@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import Threads from "@/components/Threads"
 import { ProductMockupCalendar } from "./product-mockup-calendar"
 
 /* ------------------------------------------------------------------ */
@@ -137,6 +138,16 @@ function MicroCardAI() {
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden px-6 pt-28 pb-20">
+      {/* Animated Threads background */}
+      <div className="pointer-events-none absolute inset-0 z-0 opacity-60">
+        <Threads
+          color={[0.55, 0.85, 0.72]}
+          amplitude={1.2}
+          distance={0.3}
+          enableMouseInteraction={true}
+        />
+      </div>
+
       {/* Hand-drawn stars scattered around the hero */}
       <HandDrawnStar className="pointer-events-none absolute top-24 left-[12%] text-accent-mint opacity-60 hidden lg:block" />
       <HandDrawnStar className="pointer-events-none absolute top-44 right-[8%] text-accent-mint-dark opacity-50 hidden lg:block" />
@@ -152,7 +163,7 @@ export function HeroSection() {
               className="mb-6 gap-1.5 rounded-full border-accent-mint/40 bg-accent-mint-bg px-3 py-1.5 text-foreground/70"
             >
               <Sparkles className="size-3.5 text-accent-mint-dark" />
-              AI-Powered Scheduling
+              Made with AI
             </Badge>
 
             {/* Headline */}
@@ -180,9 +191,8 @@ export function HeroSection() {
 
             {/* Subtitle */}
             <p className="mt-6 text-lg leading-relaxed text-muted-foreground md:text-xl">
-              Write once, publish everywhere. Cadence uses AI to craft
-              platform-perfect posts, schedule them at optimal times, and grow
-              your audience.
+              See a post you like? Save it. Need to write one? Cadence helps.
+              Then it posts for you on all six big sites. That&apos;s it.
             </p>
 
             {/* Hand-drawn arrow pointing from subtitle toward CTAs */}

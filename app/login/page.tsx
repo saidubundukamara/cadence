@@ -10,6 +10,7 @@ import { z } from "zod"
 import { AudioWaveform, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Threads from "@/components/Threads"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -61,6 +62,16 @@ function LoginForm() {
       <div className="relative hidden w-1/2 overflow-hidden lg:block">
         {/* Gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-accent-mint-bg via-background to-[oklch(0.95_0.03_290)]" />
+
+        {/* Animated Threads layer */}
+        <div className="pointer-events-none absolute inset-0 opacity-50">
+          <Threads
+            color={[0.55, 0.85, 0.72]}
+            amplitude={1.2}
+            distance={0.3}
+            enableMouseInteraction={true}
+          />
+        </div>
 
         {/* Blurred blobs */}
         <div

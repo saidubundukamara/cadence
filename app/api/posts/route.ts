@@ -11,7 +11,7 @@ const createPostSchema = z.object({
   scheduledAt: z.string().nullable().optional(),
   mediaUrls: z.array(z.string().url()).optional().default([]),
   aiGenerated: z.boolean().optional().default(false),
-  youtubeVideoId: z.string().optional(),
+  youtubeVideoId: z.string().nullable().optional(),
   isDraft: z.boolean().optional().default(false),
   tagIds: z.array(z.string()).optional().default([]),
   platformContents: z
@@ -108,6 +108,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const mediaRecords = data.mediaUrls.length > 0
+      ? await db.media.findMany({
+          where: { userId: session.user.id, url: { in: data.mediaUrls } },
+          select: { id: true },
+        })
+      : []
+
     const post = await db.post.create({
       data: {
         userId: session.user.id,
@@ -120,6 +127,9 @@ export async function POST(req: NextRequest) {
         youtubeVideoId: data.youtubeVideoId,
         ...(data.tagIds.length > 0 && {
           tags: { connect: data.tagIds.map((id) => ({ id })) },
+        }),
+        ...(mediaRecords.length > 0 && {
+          media: { connect: mediaRecords.map((m) => ({ id: m.id })) },
         }),
       },
     })

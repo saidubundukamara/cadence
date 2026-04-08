@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { Sparkles, CalendarDays, Share2 } from "lucide-react"
+import { Sparkles, CalendarDays, Bookmark } from "lucide-react"
 import { ProductMockupAI } from "./product-mockup-ai"
 import { ProductMockupCalendar } from "./product-mockup-calendar"
-import { ProductMockupPostCreator } from "./product-mockup-post-creator"
+import { ProductMockupExtension } from "./product-mockup-extension"
 
 /* ─── Hand-drawn SVG helpers ───────────────────────────────────────── */
 
@@ -135,46 +135,46 @@ const features = [
   {
     category: "AI Writing",
     icon: Sparkles,
-    title: "AI-powered writing that sounds like you",
+    title: "Writing help that sounds like you",
     description:
-      "Tell Cadence what you want to say, and it generates platform-optimized variations for every channel — matching tone, length, and hashtag conventions automatically.",
+      "Tell Cadence what your post is about. It writes one for X, one for LinkedIn, one for each site. Right size, right vibe, hashtags and all.",
     bullets: [
-      "Generate multiple platform variations from one idea",
-      "Automatic hashtag and mention suggestions",
-      "Tone and style customization per platform",
+      "One idea turns into many posts",
+      "Hashtags picked for you",
+      "Sounds different on each site, on purpose",
     ],
-    callout: "Save 3+ hours per week",
+    callout: "Saves you hours every week",
     mockup: <ProductMockupAI />,
     reversed: false,
   },
   {
     category: "Calendar",
     icon: CalendarDays,
-    title: "A visual calendar built for content teams",
+    title: "A calendar you can actually see",
     description:
-      "See your entire content pipeline at a glance. Drag, drop, and reschedule posts across a clean weekly or monthly view.",
+      "All your posts in one view. Drag one to a new day. Move the whole week around. No tabs, no mess.",
     bullets: [
-      "Week and month calendar views",
-      "Color-coded posts by platform",
-      "Drag-and-drop rescheduling",
+      "See the week or the month",
+      "Each site gets its own color",
+      "Drag and drop to move things",
     ],
-    callout: "Never miss a posting window",
+    callout: "You'll never forget to post",
     mockup: <ProductMockupCalendar />,
     reversed: true,
   },
   {
-    category: "Publishing",
-    icon: Share2,
-    title: "Publish everywhere from one place",
+    category: "Inspiration",
+    icon: Bookmark,
+    title: "Save the posts that catch your eye",
     description:
-      "Connect your social accounts, choose your platforms, and schedule posts in one flow. Cadence handles formatting and publishing for each network.",
+      "Browsing X, LinkedIn, or Reddit and see a post you love? Hit save. It goes into one of your boards. Come back later when you need ideas.",
     bullets: [
-      "One-click multi-platform scheduling",
-      "Platform-specific content previews",
-      "Automated publishing at optimal times",
+      "Save with one click on X, LinkedIn, and Reddit",
+      "Boards with cover photos, sorted by day",
+      "Always tied to your Cadence account",
     ],
-    callout: "One click, every platform",
-    mockup: <ProductMockupPostCreator />,
+    callout: "Save now. Post later.",
+    mockup: <ProductMockupExtension />,
     reversed: false,
   },
 ]
@@ -319,13 +319,12 @@ export function FeaturesSection() {
         {/* Section header */}
         <div className="mb-16 max-w-2xl">
           <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl md:text-5xl">
-            Choose Your <span className="italic">Perfect</span>
+            Pick how you <span className="italic">want</span>
             <br />
-            Workflow
+            to work
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Work smarter with a suite of tools designed to streamline your
-            social media workflow from creation to publishing.
+            Three simple tools. Use one. Use all three. Up to you.
           </p>
 
           {/* Hand-drawn squiggle below header */}

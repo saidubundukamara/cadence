@@ -23,6 +23,15 @@ export async function issueExtensionToken(userId: string): Promise<{
   return { token: raw, expiresAt }
 }
 
+/**
+ * Delete the ExtensionToken row matching the given raw token, if any.
+ * Safe to call with an unknown/expired token — it just no-ops.
+ */
+export async function revokeExtensionToken(raw: string): Promise<void> {
+  const tokenHash = hashToken(raw)
+  await db.extensionToken.deleteMany({ where: { tokenHash } })
+}
+
 export async function verifyExtensionToken(raw: string): Promise<string | null> {
   const tokenHash = hashToken(raw)
 

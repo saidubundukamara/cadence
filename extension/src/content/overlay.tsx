@@ -9,6 +9,7 @@ interface OverlayProps {
   onSave: (boardId: string) => Promise<void>
   onNewBoard: (name: string) => Promise<Board>
   onClose: () => void
+  onPopoverChange?: (open: boolean) => void
 }
 
 export function Overlay({
@@ -18,12 +19,17 @@ export function Overlay({
   onSave,
   onNewBoard,
   onClose,
+  onPopoverChange,
 }: OverlayProps) {
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const [showPopover, setShowPopover] = useState(false)
   const mountedRef = useRef(true)
 
   useEffect(() => () => { mountedRef.current = false }, [])
+
+  useEffect(() => {
+    onPopoverChange?.(showPopover)
+  }, [showPopover, onPopoverChange])
 
   const defaultBoardId =
     lastBoardId ??
@@ -76,8 +82,8 @@ export function Overlay({
               : state === "error"
                 ? "#dc2626"
                 : state === "saving"
-                  ? "#4f46e5"
-                  : "#6366f1",
+                  ? "#0a0a0a"
+                  : "#9ee6c4",
           border: "none",
           cursor: state === "saving" ? "wait" : "pointer",
           display: "flex",
@@ -112,8 +118,8 @@ export function Overlay({
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff">
-            <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2" />
           </svg>
         )}
       </button>

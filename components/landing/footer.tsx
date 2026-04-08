@@ -26,7 +26,7 @@ export function Footer() {
               <span className="font-[family-name:var(--font-heading)] font-bold text-xl">Cadence</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              AI-powered social media scheduling. Write once, publish everywhere.
+              Save ideas. Write with AI. Post on six sites. All in one place.
             </p>
           </div>
 

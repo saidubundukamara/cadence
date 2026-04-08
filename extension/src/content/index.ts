@@ -4,9 +4,15 @@ import { Overlay } from "./overlay"
 import { extractTweet, TWEET_SELECTOR } from "./platforms/twitter"
 import { extractLinkedInPost, LINKEDIN_POST_SELECTORS } from "./platforms/linkedin"
 import { extractRedditPost, REDDIT_POST_SELECTOR } from "./platforms/reddit"
+import { isAuthenticated, readUserScoped, writeUserScoped } from "../lib/auth"
 import type { Board, ExtractedPost } from "../lib/types"
 
 const LAST_BOARD_KEY = "cadence_last_board_id"
+const AUTH_STORAGE_KEY = "cadence_auth"
+
+let authed = false
+let injected = new WeakSet<Element>()
+const activeRemovers = new Set<() => void>()
 
 const hostname = window.location.hostname
 const isTwitter = hostname === "twitter.com" || hostname === "x.com"
@@ -81,20 +87,21 @@ function saveInspiration(post: ExtractedPost, boardId: string): Promise<void> {
   })
 }
 
-const injected = new WeakSet<Element>()
-
 async function attachOverlay(postEl: Element) {
+  if (!authed) return
   if (injected.has(postEl)) return
   injected.add(postEl)
 
   let overlayHost: HTMLElement | null = null
   let removeTimeout: ReturnType<typeof setTimeout> | null = null
+  let popoverOpen = false
 
   function removeOverlay() {
     if (overlayHost) {
       overlayHost.remove()
       overlayHost = null
     }
+    activeRemovers.delete(removeOverlay)
   }
 
   function positionHost() {
@@ -117,14 +124,14 @@ async function attachOverlay(postEl: Element) {
     if (!post) return
 
     const boards = await getBoards()
-    const stored = await chrome.storage.local.get(LAST_BOARD_KEY)
-    const lastBoardId = (stored[LAST_BOARD_KEY] as string) ?? null
+    const lastBoardId = await readUserScoped<string>(LAST_BOARD_KEY)
 
     // Mount in document.body to avoid X.com/LinkedIn overflow:hidden clipping
     // and React reconciliation removing our injected child nodes
     overlayHost = document.createElement("div")
     overlayHost.style.cssText = "position:fixed;z-index:2147483647;pointer-events:none;"
     document.body.appendChild(overlayHost)
+    activeRemovers.add(removeOverlay)
     positionHost()
 
     const shadow = overlayHost.attachShadow({ mode: "open" })
@@ -142,11 +149,15 @@ async function attachOverlay(postEl: Element) {
         boards,
         lastBoardId,
         onSave: async (boardId: string) => {
-          await chrome.storage.local.set({ [LAST_BOARD_KEY]: boardId })
+          await writeUserScoped(LAST_BOARD_KEY, boardId)
           await saveInspiration(post, boardId)
         },
         onNewBoard: createBoard,
         onClose: removeOverlay,
+        onPopoverChange: (open: boolean) => {
+          popoverOpen = open
+          if (open && removeTimeout) clearTimeout(removeTimeout)
+        },
       })
     )
 
@@ -154,6 +165,7 @@ async function attachOverlay(postEl: Element) {
       if (removeTimeout) clearTimeout(removeTimeout)
     })
     overlayHost.addEventListener("mouseleave", (e) => {
+      if (popoverOpen) return
       const related = (e as MouseEvent).relatedTarget as Node | null
       if (related && postEl.contains(related)) return
       removeTimeout = setTimeout(removeOverlay, 300)
@@ -161,6 +173,7 @@ async function attachOverlay(postEl: Element) {
   })
 
   postEl.addEventListener("mouseleave", (e) => {
+    if (popoverOpen) return
     const related = (e as MouseEvent).relatedTarget as Node | null
     if (related && overlayHost && overlayHost.contains(related)) return
     removeTimeout = setTimeout(removeOverlay, 300)
@@ -168,17 +181,40 @@ async function attachOverlay(postEl: Element) {
 }
 
 function scanAndAttach(root: Element | Document = document) {
+  if (!authed) return
   if (!isOnFeedPage()) return
   const selector = getSelector()
   if (!selector) return
   root.querySelectorAll(selector).forEach(attachOverlay)
 }
 
-// Initial scan
-scanAndAttach()
+// Initial auth check + scan
+;(async () => {
+  authed = await isAuthenticated()
+  if (authed) scanAndAttach()
+})()
+
+// React to login/logout in any tab without requiring a page reload
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || !changes[AUTH_STORAGE_KEY]) return
+  ;(async () => {
+    const nowAuthed = await isAuthenticated()
+    if (nowAuthed === authed) return
+    authed = nowAuthed
+    if (authed) {
+      injected = new WeakSet<Element>()
+      scanAndAttach()
+    } else {
+      activeRemovers.forEach((fn) => fn())
+      activeRemovers.clear()
+      injected = new WeakSet<Element>()
+    }
+  })()
+})
 
 // Watch for new posts added to the DOM
 const observer = new MutationObserver((mutations) => {
+  if (!authed) return
   if (!isOnFeedPage()) return
   const selector = getSelector()
   if (!selector) return
@@ -214,6 +250,7 @@ if (!(history.pushState as unknown as Record<string, boolean>).__cadencePatchd) 
 window.addEventListener("popstate", onNavigate)
 
 function onNavigate() {
+  if (!authed) return
   if (isOnFeedPage()) {
     scanAndAttach()
   }

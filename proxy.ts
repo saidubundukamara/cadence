@@ -23,11 +23,18 @@ export default auth((req) => {
     return new NextResponse(null, { status: 204, headers: corsHeaders(origin) })
   }
 
-  // Extension API calls use Bearer token auth — skip session redirect logic
-  // and let the API route handle authentication itself
-  if (isExtension && pathname.startsWith("/api/")) {
+  // Any /api/* request that presents a Bearer token is handled by the
+  // route itself (via verifyExtensionToken / NextAuth session). The proxy
+  // must not session-redirect it, otherwise the route handler never runs
+  // and the client sees a misleading 307 -> /login instead of 401 JSON.
+  // We key off the Authorization header rather than the Origin so curl,
+  // mobile clients, and tests work the same way the extension does.
+  const hasBearer = req.headers.get("authorization")?.startsWith("Bearer ")
+  if (pathname.startsWith("/api/") && hasBearer) {
     const res = NextResponse.next()
-    Object.entries(corsHeaders(origin)).forEach(([k, v]) => res.headers.set(k, v))
+    if (isExtension) {
+      Object.entries(corsHeaders(origin)).forEach(([k, v]) => res.headers.set(k, v))
+    }
     return res
   }
 
@@ -40,7 +47,11 @@ export default auth((req) => {
   const isPublicRoute = pathname === "/"
 
   if (isApiAuthRoute || isPublishWebhook) {
-    return NextResponse.next()
+    const res = NextResponse.next()
+    if (isExtension) {
+      Object.entries(corsHeaders(origin)).forEach(([k, v]) => res.headers.set(k, v))
+    }
+    return res
   }
 
   if (isAuthRoute) {
