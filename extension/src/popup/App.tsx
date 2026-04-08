@@ -1,26 +1,47 @@
 import { useEffect, useState } from "react"
-import { isAuthenticated } from "../lib/auth"
+import { Loader2 } from "lucide-react"
+import { isAuthenticated } from "@/lib/auth"
+import { isOnboarded } from "@/lib/onboarding"
 import { LoginForm } from "./LoginForm"
 import { Home } from "./Home"
+import { Onboarding } from "./Onboarding"
+
+type Stage = "loading" | "unauthed" | "onboarding" | "authed"
 
 export function App() {
-  const [authed, setAuthed] = useState<boolean | null>(null)
+  const [stage, setStage] = useState<Stage>("loading")
 
   useEffect(() => {
-    isAuthenticated().then(setAuthed)
+    ;(async () => {
+      const authed = await isAuthenticated()
+      if (!authed) return setStage("unauthed")
+      const onboarded = await isOnboarded()
+      setStage(onboarded ? "authed" : "onboarding")
+    })()
   }, [])
 
-  if (authed === null) {
+  if (stage === "loading") {
     return (
-      <div style={{ padding: 24, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
-        Loading…
+      <div className="flex min-h-[520px] items-center justify-center text-[var(--color-muted-foreground)]">
+        <Loader2 className="size-5 animate-spin" />
       </div>
     )
   }
 
-  if (!authed) {
-    return <LoginForm onSuccess={() => setAuthed(true)} />
+  if (stage === "unauthed") {
+    return (
+      <LoginForm
+        onSuccess={async () => {
+          const onboarded = await isOnboarded()
+          setStage(onboarded ? "authed" : "onboarding")
+        }}
+      />
+    )
   }
 
-  return <Home onLogout={() => setAuthed(false)} />
+  if (stage === "onboarding") {
+    return <Onboarding onDone={() => setStage("authed")} />
+  }
+
+  return <Home onLogout={() => setStage("unauthed")} />
 }
