@@ -40,6 +40,7 @@ export function Home({ onLogout, onOpenBoard }: HomeProps) {
   const [auth, setAuth] = useState<AuthState | null>(null)
   const [boards, setBoards] = useState<Board[] | null>(null)
   const [recent, setRecent] = useState<Inspiration[] | null>(null)
+  const [boardsError, setBoardsError] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -49,7 +50,15 @@ export function Home({ onLogout, onOpenBoard }: HomeProps) {
       setBoards((result[BOARDS_CACHE_KEY] as Board[]) ?? [])
       setRecent((result[RECENT_KEY] as Inspiration[]) ?? [])
     })
-    getBoards().then(setBoards).catch(() => {})
+    getBoards()
+      .then((bs) => {
+        setBoards(bs)
+        setBoardsError(null)
+      })
+      .catch((e) => {
+        setBoards((prev) => prev ?? [])
+        setBoardsError((e as Error).message || "Couldn't load your boards.")
+      })
   }, [])
 
   useEffect(() => {
@@ -152,7 +161,7 @@ export function Home({ onLogout, onOpenBoard }: HomeProps) {
             <EmptyState
               icon={<Inbox className="size-5" />}
               title="Nothing saved yet"
-              hint="Hit the Cadence button on any post to get started."
+              hint="Hit the Cadence button on a post and it shows up here."
             />
           ) : (
             <div className="flex flex-col gap-1.5">
@@ -201,6 +210,11 @@ export function Home({ onLogout, onOpenBoard }: HomeProps) {
         {/* Boards */}
         <section className="px-6 pb-6">
           <SectionTitle icon={<FolderHeart className="size-3" />} label="Your boards" />
+          {boardsError && (
+            <div className="mb-2 rounded-md border border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/5 px-3 py-2 text-[11px] text-[var(--color-destructive)]">
+              {boardsError}
+            </div>
+          )}
           {boards === null ? (
             <div className="space-y-1.5">
               <Skeleton className="h-9 w-full" />
@@ -210,11 +224,11 @@ export function Home({ onLogout, onOpenBoard }: HomeProps) {
             <EmptyState
               icon={<FolderHeart className="size-5" />}
               title="No boards yet"
-              hint="Boards appear here as soon as you save something."
+              hint="Save something and your first board lands here."
             />
           ) : (
             <div className="grid grid-cols-3 gap-2">
-              {boards.slice(0, 9).map((board, i) => {
+              {(boards.length > 9 ? boards.slice(0, 8) : boards.slice(0, 9)).map((board, i) => {
                 const count = board._count?.inspirations ?? 0
                 return (
                   <motion.button
@@ -287,6 +301,19 @@ export function Home({ onLogout, onOpenBoard }: HomeProps) {
                   </motion.button>
                 )
               })}
+              {boards.length > 9 && (
+                <button
+                  onClick={openDashboard}
+                  className="group relative flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-muted)]/40 p-2.5 text-center transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-muted)]"
+                >
+                  <span className="font-heading text-[15px] font-[700] tracking-[-0.01em] text-[var(--color-foreground)]">
+                    +{boards.length - 8}
+                  </span>
+                  <span className="text-[9px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                    more
+                  </span>
+                </button>
+              )}
             </div>
           )}
         </section>
