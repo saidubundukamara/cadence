@@ -40,6 +40,48 @@ export async function createBoard(name: string): Promise<Board> {
   })
 }
 
+interface ListInspirationsResponse {
+  inspirations: Inspiration[]
+  total: number
+  page: number
+  limit: number
+}
+
+export async function listInspirations(
+  boardId: string,
+  page = 1,
+  limit = 50
+): Promise<ListInspirationsResponse> {
+  const params = new URLSearchParams({
+    boardId,
+    page: String(page),
+    limit: String(limit),
+  })
+  return apiFetch<ListInspirationsResponse>(`/api/inspirations?${params}`)
+}
+
+export async function deleteInspiration(id: string): Promise<void> {
+  return apiFetch<void>(`/api/inspirations/${id}`, { method: "DELETE" })
+}
+
+export async function moveInspiration(id: string, boardId: string): Promise<Inspiration> {
+  return apiFetch<Inspiration>(`/api/inspirations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ boardId }),
+  })
+}
+
+export async function updateBoard(id: string, name: string): Promise<Board> {
+  return apiFetch<Board>(`/api/boards/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  })
+}
+
+export async function deleteBoard(id: string): Promise<void> {
+  return apiFetch<void>(`/api/boards/${id}`, { method: "DELETE" })
+}
+
 export async function saveInspiration(
   payload: SaveInspirationPayload
 ): Promise<Inspiration> {
