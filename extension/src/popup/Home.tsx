@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import {
+  AudioWaveform,
   ExternalLink,
   FolderHeart,
   Inbox,
@@ -84,18 +85,18 @@ export function Home({ onLogout }: HomeProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.22 }}
-      className="flex min-h-[520px] flex-col"
+      className="flex min-h-[600px] flex-col"
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[color-mix(in_oklch,var(--color-primary)_12%,transparent)]">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-primary)">
-              <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
-              <path d="M12 8v4l3 3-1.5 1.5-3.5-3.5V8H12z" />
-            </svg>
+      <div className="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-5">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="flex size-8 items-center justify-center rounded-xl"
+            style={{ background: "var(--color-mint)" }}
+          >
+            <AudioWaveform className="size-4 text-[var(--color-foreground)]" strokeWidth={2.25} />
           </div>
-          <span className="text-sm font-semibold tracking-tight">Cadence</span>
+          <span className="font-heading text-[17px] font-[700] tracking-[-0.02em]">Cadence</span>
         </div>
 
         <div className="relative" ref={menuRef}>
@@ -137,7 +138,7 @@ export function Home({ onLogout }: HomeProps) {
 
       <div className="flex-1 overflow-y-auto">
         {/* Recently Saved */}
-        <section className="px-4 pt-4">
+        <section className="px-6 pt-6">
           <SectionTitle icon={<Sparkles className="size-3" />} label="Recently saved" />
           {recent === null ? (
             <div className="space-y-2">
@@ -192,10 +193,10 @@ export function Home({ onLogout }: HomeProps) {
           )}
         </section>
 
-        <Separator className="my-4" />
+        <Separator className="my-6" />
 
         {/* Boards */}
-        <section className="px-4 pb-4">
+        <section className="px-6 pb-6">
           <SectionTitle icon={<FolderHeart className="size-3" />} label="Your boards" />
           {boards === null ? (
             <div className="space-y-1.5">
@@ -227,11 +228,14 @@ export function Home({ onLogout }: HomeProps) {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-[var(--color-border)] p-3">
-        <Button variant="outline" onClick={openDashboard} className="w-full gap-2" size="sm">
+      <div className="border-t border-[var(--color-border)] px-6 py-5">
+        <button
+          onClick={openDashboard}
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] text-[13px] font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-muted)]"
+        >
           Open Inspiration Library
           <ExternalLink className="size-3.5" />
-        </Button>
+        </button>
       </div>
     </motion.div>
   )
@@ -239,7 +243,7 @@ export function Home({ onLogout }: HomeProps) {
 
 function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+    <div className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
       {icon}
       {label}
     </div>

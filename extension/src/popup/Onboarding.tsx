@@ -39,7 +39,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.25 }}
-      className="flex min-h-[520px] flex-col p-5"
+      className="flex min-h-[600px] flex-col px-8 pb-8 pt-9"
     >
       {/* Header: progress + skip */}
       <div className="mb-5 flex items-center gap-3">

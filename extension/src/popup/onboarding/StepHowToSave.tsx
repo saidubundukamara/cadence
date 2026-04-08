@@ -49,7 +49,9 @@ export function StepHowToSave() {
         </div>
       </div>
 
-      <h2 className="text-xl font-semibold tracking-tight">One click to save</h2>
+      <h2 className="font-heading text-[24px] font-[700] leading-[1.15] tracking-[-0.025em]">
+        One click to save
+      </h2>
       <p className="mt-1.5 text-sm text-[var(--color-muted-foreground)]">
         Look for the Cadence button on posts across the web. One click files it into a board.
       </p>

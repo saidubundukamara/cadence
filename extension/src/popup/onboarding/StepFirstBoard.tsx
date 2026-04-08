@@ -51,7 +51,9 @@ export function StepFirstBoard({ selectedBoardId, onSelect }: Props) {
   return (
     <div className="flex flex-col">
       <div className="mb-4 text-center">
-        <h2 className="text-xl font-semibold tracking-tight">Pick your first board</h2>
+        <h2 className="font-heading text-[24px] font-[700] leading-[1.15] tracking-[-0.025em]">
+          Pick your first board
+        </h2>
         <p className="mt-1.5 text-sm text-[var(--color-muted-foreground)]">
           This is where your next save will land. You can change it later.
         </p>

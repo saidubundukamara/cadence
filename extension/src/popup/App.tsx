@@ -22,7 +22,7 @@ export function App() {
 
   if (stage === "loading") {
     return (
-      <div className="flex min-h-[520px] items-center justify-center text-[var(--color-muted-foreground)]">
+      <div className="flex min-h-[600px] items-center justify-center text-[var(--color-muted-foreground)]">
         <Loader2 className="size-5 animate-spin" />
       </div>
     )

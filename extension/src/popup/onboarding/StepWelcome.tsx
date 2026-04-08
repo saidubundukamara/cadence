@@ -38,7 +38,9 @@ export function StepWelcome() {
         </motion.div>
       </div>
 
-      <h2 className="text-xl font-semibold tracking-tight">Capture what inspires you</h2>
+      <h2 className="font-heading text-[24px] font-[700] leading-[1.15] tracking-[-0.025em]">
+        Capture what inspires you
+      </h2>
       <p className="mt-1.5 text-sm text-[var(--color-muted-foreground)]">
         Cadence turns scattered bookmarks into a curated library you can actually revisit.
       </p>
