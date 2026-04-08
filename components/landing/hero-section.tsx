@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import Threads from "@/components/Threads"
 import { ProductMockupCalendar } from "./product-mockup-calendar"
 
 /* ------------------------------------------------------------------ */
@@ -137,6 +138,16 @@ function MicroCardAI() {
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden px-6 pt-28 pb-20">
+      {/* Animated Threads background */}
+      <div className="pointer-events-none absolute inset-0 z-0 opacity-60">
+        <Threads
+          color={[0.55, 0.85, 0.72]}
+          amplitude={1.2}
+          distance={0.3}
+          enableMouseInteraction={true}
+        />
+      </div>
+
       {/* Hand-drawn stars scattered around the hero */}
       <HandDrawnStar className="pointer-events-none absolute top-24 left-[12%] text-accent-mint opacity-60 hidden lg:block" />
       <HandDrawnStar className="pointer-events-none absolute top-44 right-[8%] text-accent-mint-dark opacity-50 hidden lg:block" />
