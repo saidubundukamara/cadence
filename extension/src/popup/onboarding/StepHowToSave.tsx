@@ -53,7 +53,7 @@ export function StepHowToSave() {
         One click to save
       </h2>
       <p className="mt-1.5 text-sm text-[var(--color-muted-foreground)]">
-        Look for the Cadence button on posts across the web. One click files it into a board.
+        Look for the Cadence button on a post. One click saves it.
       </p>
 
       {/* Platform chips */}

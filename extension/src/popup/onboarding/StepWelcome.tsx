@@ -39,10 +39,10 @@ export function StepWelcome() {
       </div>
 
       <h2 className="font-heading text-[24px] font-[700] leading-[1.15] tracking-[-0.025em]">
-        Capture what inspires you
+        Save the stuff you'll want later
       </h2>
       <p className="mt-1.5 text-sm text-[var(--color-muted-foreground)]">
-        Cadence turns scattered bookmarks into a curated library you can actually revisit.
+        Bookmarks pile up and you never look at them again. Cadence is the opposite of that.
       </p>
 
       <div className="mt-5 grid w-full grid-cols-3 gap-2">

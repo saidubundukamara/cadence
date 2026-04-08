@@ -55,7 +55,7 @@ export function StepFirstBoard({ selectedBoardId, onSelect }: Props) {
           Pick your first board
         </h2>
         <p className="mt-1.5 text-sm text-[var(--color-muted-foreground)]">
-          This is where your next save will land. You can change it later.
+          Your next save lands here. You can change it later.
         </p>
       </div>
 
