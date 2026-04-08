@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Upload, X, ImagePlus, Loader2, Film, FolderOpen } from "lucide-react"
+import { CldImage, CldUploadWidget } from "next-cloudinary"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,10 +14,6 @@ import {
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import type { Platform } from "@/types"
-
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"]
-const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"]
-const ACCEPTED_TYPES = [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES]
 
 const PLATFORM_MEDIA_LIMITS: Record<string, { maxImages: number; video: boolean; label: string }> = {
   TWITTER: { maxImages: 4, video: true, label: "X: up to 4 images or 1 video" },
@@ -32,102 +29,44 @@ interface MediaUploadProps {
   platforms?: Platform[]
 }
 
+type UploadInfo = {
+  secure_url: string
+  public_id: string
+  resource_type: string
+  bytes?: number
+  width?: number
+  height?: number
+  original_filename?: string
+  format?: string
+}
+
 export function MediaUpload({ mediaUrls, onMediaChange, platforms = [] }: MediaUploadProps) {
-  const [dragging, setDragging] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [pendingPublicIds, setPendingPublicIds] = useState<Record<string, string>>({})
 
-  const uploadFile = useCallback(
-    async (file: File) => {
-      try {
-        const signRes = await fetch("/api/upload", { method: "POST" })
-        const { signature, timestamp, cloudName, apiKey } =
-          await signRes.json()
-
-        const isVideo = file.type.startsWith("video/")
-        const resourceType = isVideo ? "video" : "image"
-
-        const formData = new FormData()
-        formData.append("file", file)
-        formData.append("signature", signature)
-        formData.append("timestamp", String(timestamp))
-        formData.append("api_key", apiKey)
-        formData.append("folder", "cadence")
-
-        const uploadRes = await fetch(
-          `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
-          { method: "POST", body: formData }
-        )
-
-        const uploadData = await uploadRes.json()
-        if (uploadData.secure_url) {
-          // Save to media library
-          fetch("/api/media", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              url: uploadData.secure_url,
-              type: isVideo ? "VIDEO" : "IMAGE",
-              filename: file.name,
-              size: file.size,
-              width: uploadData.width,
-              height: uploadData.height,
-            }),
-          }).catch(() => {}) // Non-blocking
-
-          return uploadData.secure_url as string
-        }
-      } catch {
-        toast.error(`Failed to upload ${file.name}`)
-      }
-      return null
-    },
-    []
-  )
-
-  async function handleFiles(files: FileList | File[]) {
-    const validFiles = Array.from(files).filter((f) =>
-      ACCEPTED_TYPES.some((type) => f.type === type)
-    )
-    if (validFiles.length === 0) {
-      toast.error("Supported formats: JPEG, PNG, GIF, WebP, MP4, MOV")
-      return
-    }
-
-    setUploading(true)
-    const results = await Promise.all(validFiles.map(uploadFile))
-    const newUrls = results.filter((url): url is string => url !== null)
-    if (newUrls.length > 0) {
-      onMediaChange([...mediaUrls, ...newUrls])
-      toast.success(
-        newUrls.length === 1
-          ? "File uploaded"
-          : `${newUrls.length} files uploaded`
-      )
-    }
-    setUploading(false)
+  async function handleUploaded(info: UploadInfo) {
+    const isVideo = info.resource_type === "video"
+    setPendingPublicIds((prev) => ({ ...prev, [info.secure_url]: info.public_id }))
+    fetch("/api/media", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: info.secure_url,
+        publicId: info.public_id,
+        type: isVideo ? "VIDEO" : "IMAGE",
+        filename: info.original_filename
+          ? `${info.original_filename}${info.format ? "." + info.format : ""}`
+          : null,
+        size: info.bytes,
+        width: info.width,
+        height: info.height,
+      }),
+    }).catch(() => {})
+    onMediaChange([...mediaUrls, info.secure_url])
+    toast.success("File uploaded")
   }
 
   function removeMedia(url: string) {
     onMediaChange(mediaUrls.filter((u) => u !== url))
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setDragging(false)
-    if (e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files)
-    }
-  }
-
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()
-    setDragging(true)
-  }
-
-  function handleDragLeave(e: React.DragEvent) {
-    e.preventDefault()
-    setDragging(false)
   }
 
   function isVideo(url: string) {
@@ -161,59 +100,65 @@ export function MediaUpload({ mediaUrls, onMediaChange, platforms = [] }: MediaU
       {/* Thumbnails */}
       {mediaUrls.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {mediaUrls.map((url) => (
-            <div
-              key={url}
-              className="group relative overflow-hidden rounded-lg border"
-            >
-              {isVideo(url) ? (
-                <div className="flex size-24 items-center justify-center bg-muted">
-                  <Film className="size-8 text-muted-foreground" />
-                </div>
-              ) : (
-                <img
-                  src={url}
-                  alt="Media"
-                  className="size-24 object-cover transition-opacity group-hover:opacity-75"
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => removeMedia(url)}
-                className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+          {mediaUrls.map((url) => {
+            const publicId = pendingPublicIds[url]
+            return (
+              <div
+                key={url}
+                className="group relative overflow-hidden rounded-lg border"
               >
-                <X className="size-3" />
-              </button>
-              {isVideo(url) && (
-                <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[9px] text-white">
-                  VIDEO
-                </span>
-              )}
-            </div>
-          ))}
+                {isVideo(url) ? (
+                  <div className="flex size-24 items-center justify-center bg-muted">
+                    <Film className="size-8 text-muted-foreground" />
+                  </div>
+                ) : publicId ? (
+                  <CldImage
+                    src={publicId}
+                    width={96}
+                    height={96}
+                    crop="fill"
+                    alt="Media"
+                    className="size-24 object-cover transition-opacity group-hover:opacity-75"
+                  />
+                ) : (
+                  <img
+                    src={url}
+                    alt="Media"
+                    className="size-24 object-cover transition-opacity group-hover:opacity-75"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeMedia(url)}
+                  className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <X className="size-3" />
+                </button>
+                {isVideo(url) && (
+                  <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[9px] text-white">
+                    VIDEO
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {/* Drop zone */}
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={() => fileInputRef.current?.click()}
-        className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors",
-          dragging
-            ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-accent/50"
-        )}
-      >
-        {uploading ? (
-          <>
-            <Loader2 className="size-6 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Uploading...</p>
-          </>
-        ) : (
-          <>
+      {/* Add media — opens library picker (with embedded uploader) */}
+      <MediaLibraryPicker
+        onSelect={(urls) => onMediaChange([...mediaUrls, ...urls])}
+        onUploaded={handleUploaded}
+        existingUrls={mediaUrls}
+        maxMedia={maxMedia}
+        trigger={
+          <button
+            type="button"
+            className={cn(
+              "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors",
+              "border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-accent/50"
+            )}
+          >
             <div className="flex size-10 items-center justify-center rounded-full bg-muted">
               {mediaUrls.length > 0 ? (
                 <ImagePlus className="size-5 text-muted-foreground" />
@@ -226,37 +171,19 @@ export function MediaUpload({ mediaUrls, onMediaChange, platforms = [] }: MediaU
                 {mediaUrls.length > 0 ? "Add more files" : "Add images or video"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Drag & drop or click to browse. Images & MP4 video supported.
+                Pick from your library or upload new.
               </p>
             </div>
-          </>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED_TYPES.join(",")}
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files) handleFiles(e.target.files)
-            e.target.value = ""
-          }}
-        />
-      </div>
+          </button>
+        }
+      />
 
-      {/* Count indicator + Library button */}
-      <div className="flex items-center justify-between">
-        {mediaUrls.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {mediaUrls.length} file{mediaUrls.length !== 1 ? "s" : ""} attached
-            {maxMedia > 0 && ` (max ${maxMedia} for selected platforms)`}
-          </p>
-        )}
-        <MediaLibraryPicker
-          onSelect={(urls) => onMediaChange([...mediaUrls, ...urls])}
-          existingUrls={mediaUrls}
-        />
-      </div>
+      {mediaUrls.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {mediaUrls.length} file{mediaUrls.length !== 1 ? "s" : ""} attached
+          {maxMedia > 0 && ` (max ${maxMedia} for selected platforms)`}
+        </p>
+      )}
     </div>
   )
 }
@@ -264,6 +191,7 @@ export function MediaUpload({ mediaUrls, onMediaChange, platforms = [] }: MediaU
 type LibraryMedia = {
   id: string
   url: string
+  publicId: string | null
   type: "IMAGE" | "VIDEO"
   filename: string | null
   createdAt: string
@@ -271,36 +199,63 @@ type LibraryMedia = {
 
 function MediaLibraryPicker({
   onSelect,
+  onUploaded,
   existingUrls,
+  maxMedia,
+  trigger,
 }: {
   onSelect: (urls: string[]) => void
+  onUploaded?: (info: UploadInfo) => void | Promise<void>
   existingUrls: string[]
+  maxMedia: number
+  trigger?: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const [media, setMedia] = useState<LibraryMedia[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
+  const [query, setQuery] = useState("")
+
+  const loadMedia = useCallback(() => {
+    setLoading(true)
+    return fetch("/api/media?limit=50")
+      .then((r) => r.json())
+      .then((data) => setMedia(data.media || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   useEffect(() => {
     if (open) {
-      setLoading(true)
       setSelected(new Set())
-      fetch("/api/media?limit=50")
-        .then((r) => r.json())
-        .then((data) => setMedia(data.media || []))
-        .catch(() => {})
-        .finally(() => setLoading(false))
+      setQuery("")
+      loadMedia()
     }
-  }, [open])
+  }, [open, loadMedia])
+
+  const remainingSlots = Math.max(0, maxMedia - existingUrls.length)
 
   function toggleSelect(url: string) {
     setSelected((prev) => {
       const next = new Set(prev)
-      if (next.has(url)) next.delete(url)
-      else next.add(url)
+      if (next.has(url)) {
+        next.delete(url)
+      } else {
+        if (next.size >= remainingSlots) {
+          toast.error(`You can only add ${remainingSlots} more file${remainingSlots !== 1 ? "s" : ""}`)
+          return prev
+        }
+        next.add(url)
+      }
       return next
     })
   }
+
+  const filtered = query.trim()
+    ? media.filter((m) =>
+        (m.filename || "").toLowerCase().includes(query.trim().toLowerCase())
+      )
+    : media
 
   function handleInsert() {
     const urls = [...selected].filter((u) => !existingUrls.includes(u))
@@ -314,27 +269,76 @@ function MediaLibraryPicker({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 text-xs">
-          <FolderOpen className="size-3" />
-          Browse Library
-        </Button>
+        {trigger ?? (
+          <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+            <FolderOpen className="size-3" />
+            Browse Library
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Media Library</DialogTitle>
         </DialogHeader>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search filename..."
+            className="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+          />
+          <CldUploadWidget
+            signatureEndpoint="/api/sign-cloudinary"
+            options={{
+              apiKey: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
+              folder: "cadence",
+              multiple: true,
+              sources: ["local", "url", "camera"],
+              resourceType: "auto",
+              clientAllowedFormats: ["jpg", "jpeg", "png", "gif", "webp", "mp4", "mov"],
+            }}
+            onSuccess={async (result) => {
+              const info = result?.info
+              if (info && typeof info === "object" && "secure_url" in info) {
+                await onUploaded?.(info as UploadInfo)
+                loadMedia()
+              }
+            }}
+          >
+            {({ open: openWidget }) => (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => openWidget()}
+                className="h-8 gap-1"
+              >
+                <Upload className="size-3.5" />
+                Upload new
+              </Button>
+            )}
+          </CldUploadWidget>
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
         ) : media.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No media in library yet. Upload files to build your library.
+            No media yet — click <span className="font-medium">Upload new</span> to add your first file.
           </p>
         ) : (
           <>
+            {filtered.length === 0 ? (
+              <p className="py-6 text-center text-xs text-muted-foreground">
+                No files match.
+              </p>
+            ) : (
             <div className="grid max-h-64 grid-cols-4 gap-2 overflow-y-auto">
-              {media.map((item) => {
+              {filtered.map((item) => {
                 const isSelected = selected.has(item.url)
                 const isAlreadyUsed = existingUrls.includes(item.url)
                 return (
@@ -356,6 +360,15 @@ function MediaLibraryPicker({
                       <div className="flex aspect-square items-center justify-center bg-muted">
                         <Film className="size-6 text-muted-foreground" />
                       </div>
+                    ) : item.publicId ? (
+                      <CldImage
+                        src={item.publicId}
+                        width={120}
+                        height={120}
+                        crop="fill"
+                        alt={item.filename || "Media"}
+                        className="aspect-square object-cover"
+                      />
                     ) : (
                       <img
                         src={item.url}
@@ -379,6 +392,7 @@ function MediaLibraryPicker({
                 )
               })}
             </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
