@@ -93,6 +93,7 @@ model Post {
   results          PostResult[]
   platformContents PostPlatformContent[]
   tags             Tag[]
+  media            Media[]               @relation("PostMedia")
 }
 
 model Tag {
@@ -123,6 +124,7 @@ model Media {
   id        String    @id @default(cuid())
   userId    String
   url       String
+  publicId  String?
   type      MediaType @default(IMAGE)
   filename  String?
   size      Int?
@@ -130,6 +132,7 @@ model Media {
   height    Int?
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts     Post[]    @relation("PostMedia")
 }
 
 enum MediaType {
